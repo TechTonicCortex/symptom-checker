@@ -1,0 +1,2689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SymptomSense — AI Health Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f4ef;
+    --surface: #ffffff;
+    --surface2: #f0ece4;
+    --border: #e2dbd0;
+    --text: #1a1510;
+    --text2: #6b6256;
+    --text3: #9e9385;
+    --accent: #c8622a;
+    --accent-light: #f5e8df;
+    --green: #2a7a4b;
+    --green-light: #dff0e8;
+    --yellow: #b87c1a;
+    --yellow-light: #fdf3dd;
+    --red: #b82a2a;
+    --red-light: #fde8e8;
+    --shadow: 0 2px 12px rgba(26,21,16,0.08);
+    --shadow-lg: 0 8px 40px rgba(26,21,16,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* Subtle grid texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(180,160,130,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(180,160,130,0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 48px;
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: var(--accent);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+
+  .logo-text {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .tagline {
+    font-size: 15px;
+    color: var(--text2);
+    font-weight: 300;
+    max-width: 480px;
+    line-height: 1.7;
+  }
+
+  /* Disclaimer banner */
+  .disclaimer {
+    background: var(--yellow-light);
+    border: 1px solid #e8c97a;
+    border-left: 4px solid var(--yellow);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 36px;
+    font-size: 13px;
+    color: #7a5210;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .disclaimer strong { display: block; margin-bottom: 2px; font-weight: 600; }
+
+  /* Input area */
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: var(--shadow);
+    margin-bottom: 32px;
+  }
+
+  .input-label {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .input-hint {
+    font-size: 13px;
+    color: var(--text3);
+    margin-bottom: 16px;
+  }
+
+  .symptom-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    resize: vertical;
+    min-height: 100px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+
+  .symptom-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(200, 98, 42, 0.1);
+    background: var(--surface);
+  }
+
+  .symptom-input::placeholder { color: var(--text3); }
+
+  /* Example chips */
+  .examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    margin-bottom: 20px;
+  }
+
+  .example-label {
+    font-size: 12px;
+    color: var(--text3);
+    align-self: center;
+    margin-right: 4px;
+  }
+
+  .chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 13px;
+    font-size: 12px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .chip:hover {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Extra fields */
+  .extra-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .field-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .field-group select {
+    width: 100%;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6256' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+
+  .field-group select:focus { border-color: var(--accent); }
+
+  .analyse-btn {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .analyse-btn:hover {
+    background: #b3521f;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(200,98,42,0.3);
+  }
+
+  .analyse-btn:active { transform: translateY(0); }
+  .analyse-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Results */
+  .results { display: none; }
+  .results.visible { display: block; animation: fadeUp 0.4s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .results-header {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    margin-bottom: 6px;
+  }
+
+  .results-sub {
+    font-size: 13px;
+    color: var(--text3);
+    margin-bottom: 24px;
+  }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-card:hover { box-shadow: var(--shadow-lg); }
+
+  .result-card.top {
+    border-color: var(--accent);
+    border-width: 2px;
+  }
+
+  .result-card.top::before {
+    content: 'TOP MATCH';
+    position: absolute;
+    top: 0; right: 0;
+    background: var(--accent);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 4px 12px;
+    border-bottom-left-radius: 10px;
+  }
+
+  .result-top-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .result-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--text);
+  }
+
+  .result-emoji { font-size: 28px; }
+
+  .confidence-bar-wrap {
+    margin-bottom: 14px;
+  }
+
+  .confidence-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text3);
+    margin-bottom: 5px;
+  }
+
+  .confidence-pct { font-weight: 600; color: var(--text2); }
+
+  .confidence-bar {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .confidence-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.8s ease;
+    background: linear-gradient(90deg, #e8a87c, var(--accent));
+  }
+
+  .confidence-fill.high { background: linear-gradient(90deg, #5ab87c, var(--green)); }
+  .confidence-fill.med { background: linear-gradient(90deg, #e8c87c, var(--yellow)); }
+  .confidence-fill.low { background: linear-gradient(90deg, #e89a9a, #d44); }
+
+  .result-desc {
+    font-size: 14px;
+    color: var(--text2);
+    margin-bottom: 14px;
+    line-height: 1.7;
+  }
+
+  .result-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .tag.matched {
+    background: var(--accent-light);
+    border-color: rgba(200,98,42,0.3);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .action-box {
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .action-box.green { background: var(--green-light); color: #1a5c36; }
+  .action-box.yellow { background: var(--yellow-light); color: #7a5210; }
+  .action-box.red { background: var(--red-light); color: #7a1a1a; }
+
+  .no-match {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text3);
+  }
+
+  .no-match .emoji { font-size: 40px; margin-bottom: 12px; }
+  .no-match p { font-size: 15px; }
+
+  .reset-btn {
+    background: none;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 12px;
+  }
+
+  .reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  /* ── HISTORY ── */
+  .history-section {
+    margin-top: 32px;
+  }
+
+  .history-header {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+
+  .history-sub {
+    font-size: 13px;
+    color: var(--text3);
+    margin-bottom: 16px;
+  }
+
+  .history-empty {
+    text-align: center;
+    padding: 28px;
+    color: var(--text3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 13px;
+  }
+
+  .history-entry {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+  }
+
+  .history-entry:hover { box-shadow: var(--shadow); }
+
+  .history-date { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .history-symptoms { font-size: 13px; color: var(--text); font-weight: 500; }
+  .history-result { font-size: 12px; color: var(--accent); margin-top: 3px; }
+
+  .history-del {
+    background: none; border: none;
+    color: var(--text3); font-size: 16px;
+    cursor: pointer; padding: 2px 6px;
+    border-radius: 4px; transition: all 0.2s; flex-shrink: 0;
+  }
+  .history-del:hover { background: var(--red-light); color: var(--red); }
+
+  .clear-history-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 12px;
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .clear-history-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── CONTAGION BADGE ── */
+  .contagion-box {
+    margin-top: 10px;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    border: 1px solid;
+  }
+
+  .contagion-box.high   { background: rgba(184,42,42,0.06);  border-color: rgba(184,42,42,0.25);  color: #7a1a1a; }
+  .contagion-box.medium { background: rgba(184,124,26,0.06); border-color: rgba(184,124,26,0.25); color: #7a5210; }
+  .contagion-box.low    { background: rgba(42,122,75,0.06);  border-color: rgba(42,122,75,0.25);  color: #1a5c36; }
+  .contagion-box.none   { background: var(--surface2);       border-color: var(--border);         color: var(--text3); }
+
+  /* ── DOCTOR REPORT BUTTON ── */
+  .report-btn {
+    width: 100%;
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    padding: 13px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .report-btn:hover {
+    background: var(--accent-light);
+    transform: translateY(-1px);
+  }
+
+  /* ── PRINT STYLES ── */
+  /* ── BODY MAP ── */
+  .bodymap-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .bodymap-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 0;
+  }
+
+  .bodymap-toggle.open { margin-bottom: 20px; }
+
+  .bodymap-toggle-label {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+  }
+
+  .bodymap-toggle-icon {
+    font-size: 18px;
+    transition: transform 0.2s;
+    color: var(--text3);
+  }
+
+  .bodymap-toggle.open .bodymap-toggle-icon { transform: rotate(180deg); }
+
+  .bodymap-content { display: none; }
+  .bodymap-content.open { display: block; animation: fadeUp 0.3s ease; }
+
+  .bodymap-hint { font-size: 12px; color: var(--text3); margin-bottom: 16px; }
+
+  .bodymap-wrap {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+
+  .bodymap-svg-wrap {
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .bodymap-svg-wrap svg { display: block; }
+
+  .body-zone {
+    cursor: pointer;
+    transition: all 0.15s;
+    opacity: 0.7;
+  }
+
+  .body-zone:hover { opacity: 1; filter: brightness(1.2); }
+  .body-zone.selected { opacity: 1; filter: brightness(1.3) drop-shadow(0 0 6px rgba(200,98,42,0.6)); }
+
+  .bodymap-symptoms-panel {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .zone-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .zone-symptoms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .zone-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 13px;
+    font-size: 12px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .zone-chip:hover {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .zone-chip.added {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .bodymap-selected-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    min-height: 32px;
+  }
+
+  .selected-chip {
+    background: var(--accent-light);
+    border: 1px solid rgba(200,98,42,0.3);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .selected-chip button {
+    background: none; border: none;
+    color: var(--accent); cursor: pointer;
+    font-size: 12px; padding: 0; line-height: 1;
+  }
+
+  .bodymap-apply-btn {
+    margin-top: 14px;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    padding: 11px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .bodymap-apply-btn:hover { background: #b3521f; }
+
+  /* ── MEDICATION CHECKER ── */
+  .meds-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .meds-label {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+
+  .meds-hint { font-size: 13px; color: var(--text3); margin-bottom: 14px; }
+
+  .meds-row { display: flex; gap: 10px; margin-bottom: 14px; }
+
+  .meds-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .meds-input:focus { border-color: var(--accent); }
+
+  .meds-btn {
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .meds-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .meds-result {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: none;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .meds-result.visible { display: block; }
+
+  .meds-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+
+  .meds-class { font-size: 11px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
+
+  .meds-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .meds-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .meds-box-label { font-size: 9px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+  .meds-box-content { font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+  .meds-warning {
+    margin-top: 10px;
+    background: var(--yellow-light);
+    border: 1px solid rgba(184,124,26,0.3);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #7a5210;
+  }
+
+  @media print {
+    body * { visibility: hidden; }
+    #printReport, #printReport * { visibility: visible; }
+    #printReport {
+      position: fixed; top: 0; left: 0;
+      width: 100%; padding: 32px;
+      background: #fff; color: #000;
+      font-family: sans-serif;
+    }
+  }
+
+  #printReport { display: none; }
+
+  /* Loading spinner */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="header">
+    <div class="logo-row">
+      <div class="logo-icon">🩺</div>
+      <div class="logo-text">Symptom<span>Sense</span></div>
+    </div>
+    <p class="tagline">Describe how you're feeling and our symptom analysis engine will suggest possible conditions to discuss with your doctor.</p>
+  </div>
+
+  <div class="disclaimer">
+    <span>⚠️</span>
+    <div>
+      <strong>This is not medical advice.</strong>
+      SymptomSense is for educational purposes only. Always consult a real doctor for diagnosis and treatment.
+    </div>
+  </div>
+
+  <!-- BODY MAP -->
+  <div class="bodymap-card">
+    <div class="bodymap-toggle" id="bodymapToggle" onclick="toggleBodyMap()">
+      <div class="bodymap-toggle-label">🫀 Body Map — Click where it hurts</div>
+      <span class="bodymap-toggle-icon" id="bodymapIcon">▼</span>
+    </div>
+    <div class="bodymap-content" id="bodymapContent">
+      <p class="bodymap-hint">Click a body region to see common symptoms. Selected symptoms will be added to the text box.</p>
+      <div class="bodymap-wrap">
+        <!-- SVG Body Diagram -->
+        <div class="bodymap-svg-wrap">
+          <svg width="140" height="320" viewBox="0 0 140 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Head -->
+            <ellipse class="body-zone" id="zone-head" cx="70" cy="30" rx="24" ry="28" fill="#c8622a" data-zone="head" onclick="selectZone('head')" />
+            <!-- Neck -->
+            <rect class="body-zone" id="zone-neck" x="60" y="56" width="20" height="18" rx="4" fill="#d4744a" data-zone="neck" onclick="selectZone('neck')" />
+            <!-- Chest -->
+            <rect class="body-zone" id="zone-chest" x="40" y="74" width="60" height="50" rx="8" fill="#2a7a4b" data-zone="chest" onclick="selectZone('chest')" />
+            <!-- Abdomen -->
+            <rect class="body-zone" id="zone-abdomen" x="42" y="124" width="56" height="44" rx="6" fill="#b87c1a" data-zone="abdomen" onclick="selectZone('abdomen')" />
+            <!-- Left Arm -->
+            <rect class="body-zone" id="zone-arms" x="14" y="76" width="22" height="70" rx="8" fill="#457b9d" data-zone="arms" onclick="selectZone('arms')" />
+            <!-- Right Arm (mirrors) -->
+            <rect class="body-zone" x="104" y="76" width="22" height="70" rx="8" fill="#457b9d" data-zone="arms" onclick="selectZone('arms')" />
+            <!-- Left Leg -->
+            <rect class="body-zone" id="zone-legs" x="44" y="168" width="22" height="90" rx="8" fill="#6a4c9c" data-zone="legs" onclick="selectZone('legs')" />
+            <!-- Right Leg -->
+            <rect class="body-zone" x="74" y="168" width="22" height="90" rx="8" fill="#6a4c9c" data-zone="legs" onclick="selectZone('legs')" />
+            <!-- Left Foot -->
+            <ellipse class="body-zone" x="33" y="256" cx="55" cy="264" rx="14" ry="8" fill="#8d6e63" data-zone="legs" onclick="selectZone('legs')" />
+            <!-- Right Foot -->
+            <ellipse class="body-zone" x="63" y="256" cx="85" cy="264" rx="14" ry="8" fill="#8d6e63" data-zone="legs" onclick="selectZone('legs')" />
+            <!-- Labels -->
+            <text x="70" y="34" text-anchor="middle" font-size="9" fill="white" font-family="sans-serif" pointer-events="none">HEAD</text>
+            <text x="70" y="103" text-anchor="middle" font-size="9" fill="white" font-family="sans-serif" pointer-events="none">CHEST</text>
+            <text x="70" y="150" text-anchor="middle" font-size="9" fill="white" font-family="sans-serif" pointer-events="none">ABDOMEN</text>
+            <text x="25" y="115" text-anchor="middle" font-size="8" fill="white" font-family="sans-serif" pointer-events="none">ARM</text>
+            <text x="115" y="115" text-anchor="middle" font-size="8" fill="white" font-family="sans-serif" pointer-events="none">ARM</text>
+            <text x="55" y="218" text-anchor="middle" font-size="8" fill="white" font-family="sans-serif" pointer-events="none">LEG</text>
+            <text x="85" y="218" text-anchor="middle" font-size="8" fill="white" font-family="sans-serif" pointer-events="none">LEG</text>
+          </svg>
+        </div>
+
+        <!-- Symptoms panel -->
+        <div class="bodymap-symptoms-panel">
+          <div class="zone-title" id="zoneTitle">👆 Click a body region</div>
+          <div class="zone-symptoms" id="zoneSymptoms"></div>
+          <div class="bodymap-selected-chips" id="selectedChips">
+            <span style="font-size:11px;color:var(--text3)">No symptoms selected yet</span>
+          </div>
+          <button class="bodymap-apply-btn" onclick="applyBodySymptoms()">Add to symptom box →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEDICATION CHECKER -->
+  <div class="meds-card">
+    <div class="meds-label">💊 Medication Checker</div>
+    <p class="meds-hint">Type a medication name to see what it treats, side effects and warnings.</p>
+    <div class="meds-row">
+      <input class="meds-input" id="medsInput" type="text" placeholder="e.g. ibuprofen, amoxicillin, metformin...">
+      <button class="meds-btn" onclick="checkMed()">Look up</button>
+    </div>
+    <div class="meds-result" id="medsResult"></div>
+  </div>
+
+  <div class="input-card">
+    <div class="input-label">What symptoms are you experiencing?</div>
+    <p class="input-hint">Describe in plain language — e.g. "sore throat, fever, tired" or "itchy rash all over my arms"</p>
+
+    <textarea
+      class="symptom-input"
+      id="symptomInput"
+      placeholder="Type your symptoms here... e.g. I have a runny nose, sore throat, and I feel very tired"
+    ></textarea>
+
+    <div class="examples">
+      <span class="example-label">Try:</span>
+      <span class="chip" onclick="fillExample('fever, headache, body aches, chills, very tired')">Flu-like</span>
+      <span class="chip" onclick="fillExample('runny nose, sneezing, mild sore throat, watery eyes')">Cold</span>
+      <span class="chip" onclick="fillExample('itchy red rash, spots, slight fever, feeling tired')">Rash</span>
+      <span class="chip" onclick="fillExample('very sore throat, fever, swollen neck glands, hard to swallow')">Sore throat</span>
+      <span class="chip" onclick="fillExample('cough, fever, shortness of breath, loss of smell')">Breathing</span>
+      <span class="chip" onclick="fillExample('stomach pain, nausea, vomiting, diarrhoea')">Stomach</span>
+    </div>
+
+    <div class="extra-row">
+      <div class="field-group">
+        <label>Age group</label>
+        <select id="ageGroup">
+          <option value="child">Child (5–12)</option>
+          <option value="teen" selected>Teen (13–17)</option>
+          <option value="adult">Adult (18+)</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Duration</label>
+        <select id="duration">
+          <option value="today">Started today</option>
+          <option value="few" selected>2–3 days</option>
+          <option value="week">About a week</option>
+          <option value="long">More than a week</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="analyse-btn" onclick="analyse()" id="analyseBtn">
+      <div class="spinner" id="spinner"></div>
+      <span id="btnText">🔍 Analyse Symptoms</span>
+    </button>
+  </div>
+
+  <div class="results" id="results">
+    <div class="results-header" id="resultsHeader"></div>
+    <p class="results-sub" id="resultsSub"></p>
+    <div id="resultsList"></div>
+    <button class="report-btn" id="reportBtn" onclick="generateReport()" style="display:none">
+      🖨️ Generate Doctor Report
+    </button>
+    <button class="reset-btn" onclick="reset()">← Check different symptoms</button>
+  </div>
+
+  <!-- Symptom History -->
+  <div class="history-section">
+    <div class="history-header">📊 Symptom History</div>
+    <p class="history-sub">Your past checks are saved locally — useful for spotting patterns.</p>
+    <div id="historyList"></div>
+  </div>
+
+  <div class="footer">
+    Built with ❤️ · Pattern-matching symptom engine · History saved locally · Always see a real doctor
+  </div>
+
+  <!-- Hidden print report -->
+  <div id="printReport"></div>
+
+</div>
+
+<script>
+// ─── SYMPTOM DATABASE ───────────────────────────────────────────
+const CONDITIONS = [
+  {
+    name: "Common Cold",
+    emoji: "🤧",
+    keywords: ["runny nose","stuffy nose","blocked nose","sneezing","sneeze","mild sore throat","sore throat","cough","tired","fatigue","congestion","watery eyes","mild headache","mucus"],
+    description: "A viral infection of the upper respiratory tract. Usually mild and clears up on its own within 7–10 days.",
+    action: "green",
+    actionText: "Rest, drink plenty of fluids, and take over-the-counter cold medicine. See a doctor if symptoms last more than 10 days.",
+    tags: ["viral","upper respiratory","very common","contagious"]
+  },
+  {
+    name: "Influenza (Flu)",
+    emoji: "🤒",
+    keywords: ["fever","high fever","chills","body aches","muscle aches","headache","very tired","exhausted","fatigue","sore throat","cough","sudden onset","shivering"],
+    description: "A more serious viral infection than the cold. Flu hits suddenly and hard — high fever, body aches, and extreme tiredness are hallmarks.",
+    action: "yellow",
+    actionText: "Rest and fluids are key. See a doctor quickly — antiviral medication works best if taken within 48 hours of symptoms starting.",
+    tags: ["viral","respiratory","contagious","seasonal"]
+  },
+  {
+    name: "COVID-19",
+    emoji: "😷",
+    keywords: ["fever","cough","loss of smell","loss of taste","shortness of breath","breathing difficulty","tired","fatigue","sore throat","runny nose","headache","body aches","diarrhoea","nausea","chills"],
+    description: "An infection caused by the SARS-CoV-2 coronavirus. Symptoms vary from very mild to severe. Loss of smell/taste is a distinctive sign.",
+    action: "yellow",
+    actionText: "Take a rapid antigen test. Isolate until you get results. Contact a doctor if you have difficulty breathing or your symptoms are severe.",
+    tags: ["viral","respiratory","contagious","reportable"]
+  },
+  {
+    name: "Strep Throat",
+    emoji: "😣",
+    keywords: ["very sore throat","severe sore throat","sore throat","fever","swollen glands","swollen neck","hard to swallow","difficulty swallowing","headache","stomach pain","white spots","tonsils","no cough"],
+    description: "A bacterial throat infection (Group A Streptococcus). Unlike a cold, strep usually has no cough and often causes white patches on the tonsils.",
+    action: "yellow",
+    actionText: "See a doctor — strep needs antibiotics to clear up and prevent complications like rheumatic fever. Don't ignore this one.",
+    tags: ["bacterial","throat","requires antibiotics","common in kids"]
+  },
+  {
+    name: "Chickenpox",
+    emoji: "🔴",
+    keywords: ["itchy rash","blisters","spots","red spots","pox","fever","tired","fatigue","itching","blister","rash all over","rash on body","mild fever"],
+    description: "A highly contagious viral infection causing a distinctive itchy blister rash all over the body. Most common in children.",
+    action: "yellow",
+    actionText: "See a doctor to confirm. Avoid scratching — it can cause scars and infection. Stay home to avoid spreading it to others.",
+    tags: ["viral","contagious","childhood illness","vaccine-preventable"]
+  },
+  {
+    name: "Measles",
+    emoji: "🌡️",
+    keywords: ["rash","red rash","fever","high fever","cough","runny nose","red eyes","conjunctivitis","koplik spots","white spots in mouth","sensitivity to light","rash spreading","blotchy rash"],
+    description: "A serious viral infection that begins with fever, cough, and runny nose before a distinctive blotchy red rash spreads from the face downward.",
+    action: "red",
+    actionText: "See a doctor immediately. Measles is serious and highly contagious. Isolate from others, especially unvaccinated people and babies.",
+    tags: ["viral","serious","highly contagious","vaccine-preventable"]
+  },
+  {
+    name: "Allergic Reaction / Hay Fever",
+    emoji: "🌿",
+    keywords: ["sneezing","runny nose","watery eyes","itchy eyes","itchy nose","itchy throat","no fever","congestion","stuffy nose","rash","hives","itchy skin","swelling"],
+    description: "An immune system response to allergens (pollen, dust, pet dander, food). Symptoms mimic a cold but there's usually no fever.",
+    action: "green",
+    actionText: "Antihistamines can help. Identify and avoid your trigger if possible. See a doctor if symptoms are severe or you have trouble breathing.",
+    tags: ["allergic","immune","non-contagious","seasonal"]
+  },
+  {
+    name: "Gastroenteritis (Stomach Flu)",
+    emoji: "🤢",
+    keywords: ["nausea","vomiting","diarrhoea","diarrhea","stomach pain","stomach cramps","abdominal pain","feeling sick","stomach ache","loose stools","no appetite","fever","chills"],
+    description: "An infection of the digestive tract, usually viral. Causes vomiting, diarrhoea, and stomach cramps. Usually passes within 1–3 days.",
+    action: "green",
+    actionText: "Stay hydrated with small sips of water or electrolyte drinks. Avoid solid food for a few hours. See a doctor if you can't keep any fluids down.",
+    tags: ["viral","bacterial","gastrointestinal","contagious"]
+  },
+  {
+    name: "Tonsillitis",
+    emoji: "🏥",
+    keywords: ["sore throat","swollen tonsils","tonsils","fever","difficulty swallowing","swallowing pain","swollen glands","bad breath","muffled voice","ear pain","red throat","white coating"],
+    description: "Inflammation of the tonsils, usually from a viral or bacterial infection. Causes severe throat pain and difficulty swallowing.",
+    action: "yellow",
+    actionText: "See a doctor — if bacterial, antibiotics are needed. Recurring tonsillitis may eventually require surgical removal of the tonsils.",
+    tags: ["viral","bacterial","throat","common in teens"]
+  },
+  {
+    name: "Ear Infection",
+    emoji: "👂",
+    keywords: ["ear pain","earache","ear ache","pulling ear","hearing loss","hearing difficulty","fever","fluid from ear","ear discharge","balance problems","ringing ear","pain in ear"],
+    description: "An infection of the middle or outer ear. Very common in children. Can cause significant ear pain, sometimes with fever.",
+    action: "yellow",
+    actionText: "See a doctor — bacterial ear infections often need antibiotics. Don't insert anything into the ear canal.",
+    tags: ["bacterial","viral","ear","common in children"]
+  },
+  {
+    name: "Migraine",
+    emoji: "🧠",
+    keywords: ["severe headache","throbbing headache","headache","nausea","vomiting","sensitivity to light","light sensitivity","sensitivity to sound","aura","visual disturbance","one side head","pulsing pain"],
+    description: "Intense headaches often affecting one side of the head, frequently accompanied by nausea and extreme sensitivity to light and sound.",
+    action: "yellow",
+    actionText: "Rest in a dark, quiet room. Over-the-counter pain relief can help mild migraines. See a doctor if migraines are frequent or very severe.",
+    tags: ["neurological","recurring","non-contagious","manageable"]
+  },
+  {
+    name: "Urinary Tract Infection (UTI)",
+    emoji: "🚽",
+    keywords: ["burning urination","burning when peeing","frequent urination","need to pee a lot","cloudy urine","dark urine","lower abdominal pain","pelvic pain","strong smelling urine","blood in urine","urgency to urinate"],
+    description: "A bacterial infection in the urinary system. Causes a burning sensation when urinating and a frequent, urgent need to pee.",
+    action: "yellow",
+    actionText: "See a doctor — UTIs need antibiotics. Drink plenty of water. Left untreated, UTIs can spread to the kidneys.",
+    tags: ["bacterial","urinary","requires antibiotics","more common in females"]
+  },
+  {
+    name: "Asthma / Breathing Difficulty",
+    emoji: "💨",
+    keywords: ["shortness of breath","difficulty breathing","wheezing","tight chest","chest tightness","coughing at night","exercise cough","cough","breathless","can't catch breath"],
+    description: "A chronic condition where the airways narrow and swell, making breathing difficult. Can be triggered by exercise, cold air, or allergens.",
+    action: "yellow",
+    actionText: "If you have an inhaler, use it. Sit upright and try to stay calm. Go to emergency if breathing is severely difficult — this is serious.",
+    tags: ["respiratory","chronic","manageable","can be serious"]
+  },
+  {
+    name: "Pink Eye (Conjunctivitis)",
+    emoji: "👁️",
+    keywords: ["red eyes","pink eye","watery eyes","eye discharge","crusty eyes","itchy eyes","eye pain","swollen eyelid","blurry vision","yellow discharge","green discharge"],
+    description: "Inflammation of the membrane covering the eye, causing redness, discharge, and itching. Can be viral, bacterial, or allergic.",
+    action: "green",
+    actionText: "See a doctor to find out the type — bacterial pink eye needs antibiotic eye drops. Avoid touching your eyes and wash hands frequently.",
+    tags: ["viral","bacterial","allergic","contagious","eye"]
+  },
+  {
+    name: "Appendicitis",
+    emoji: "🚨",
+    keywords: ["severe abdominal pain","pain lower right","right side pain","nausea","vomiting","fever","loss of appetite","stomach pain gets worse","rebound tenderness","rigid abdomen"],
+    description: "Inflammation of the appendix. Starts as pain around the belly button that moves to the lower right side. This is a medical emergency.",
+    action: "red",
+    actionText: "⚠️ Go to emergency immediately. Do NOT eat or drink. Do NOT take pain medication before being seen — it can mask the diagnosis.",
+    tags: ["emergency","surgical","serious","requires immediate care"]
+  },
+  {
+    name: "Eczema / Dermatitis",
+    emoji: "🤲",
+    keywords: ["itchy skin","dry skin","red skin","rash","flaky skin","scaling skin","cracked skin","inflamed skin","skin irritation","patches of skin","rash on hands","rash on arms"],
+    description: "A chronic skin condition causing dry, itchy, inflamed patches of skin. Often triggered by irritants, stress, or certain fabrics.",
+    action: "green",
+    actionText: "Moisturise regularly and avoid known triggers. A doctor can prescribe steroid creams for flare-ups.",
+    tags: ["skin","chronic","non-contagious","manageable"]
+  },
+  {
+    name: "Dehydration",
+    emoji: "💧",
+    keywords: ["very thirsty","thirsty","dry mouth","dark urine","headache","dizziness","dizzy","tired","fatigue","no energy","dry lips","sunken eyes","infrequent urination","not peeing"],
+    description: "Occurs when your body loses more fluids than it takes in. Mild dehydration is common and easily fixed; severe cases need medical attention.",
+    action: "green",
+    actionText: "Drink water or electrolyte drinks slowly. Rest. If you're vomiting and can't keep fluids down, see a doctor.",
+    tags: ["lifestyle","common","easily treated","can become serious"]
+  },
+  {
+    name: "Sinusitis",
+    emoji: "😩",
+    keywords: ["facial pain","pressure behind eyes","sinus pressure","headache","stuffy nose","blocked nose","thick mucus","yellow mucus","green mucus","postnasal drip","toothache","reduced smell"],
+    description: "Inflammation of the sinuses, often following a cold. Causes pressure and pain in the face, especially around the nose and eyes.",
+    action: "green",
+    actionText: "Steam inhalation and decongestants can help. See a doctor if symptoms last more than 10 days — bacterial sinusitis needs antibiotics.",
+    tags: ["viral","bacterial","sinus","upper respiratory"]
+  },
+  {
+    name: "Mono (Mononucleosis)",
+    emoji: "😴",
+    keywords: ["extreme fatigue","very tired","exhausted","sore throat","swollen glands","fever","swollen spleen","body aches","loss of appetite","rash","swollen lymph nodes","weakness","tired for weeks"],
+    description: "The 'kissing disease' — caused by the Epstein-Barr virus. Extreme fatigue, swollen glands, and sore throat that can last weeks.",
+    action: "yellow",
+    actionText: "See a doctor for a blood test. Rest is essential — avoid contact sports due to the risk of spleen injury. Recovery can take weeks.",
+    tags: ["viral","teens and young adults","contagious","requires rest"]
+  },
+  {
+    name: "Colorectal (Colon) Cancer",
+    emoji: "🔬",
+    keywords: ["blood in stool","rectal bleeding","bloody stool","dark stool","black stool","change in bowel habits","bowel habit change","persistent diarrhoea","persistent diarrhea","constipation","narrower stools","thin stools","abdominal cramps","abdominal pain","abdominal discomfort","unexplained weight loss","weight loss","fatigue","weakness","feeling that bowel doesnt empty","incomplete bowel","gas","bloating","persistent gas"],
+    description: "Colorectal cancer develops in the colon or rectum. Key warning signs include changes in bowel habits, blood in stool, and persistent abdominal discomfort. It is highly treatable when caught early.",
+    action: "red",
+    actionText: "⚠️ See a doctor as soon as possible. These symptoms require proper investigation — do not wait. Early detection dramatically improves outcomes.",
+    tags: ["serious","requires urgent investigation","cancer","early detection critical"]
+  },
+  {
+    name: "Food Poisoning",
+    emoji: "🍽️",
+    keywords: ["nausea","vomiting","diarrhoea","diarrhea","stomach cramps","stomach pain","after eating","sick after eating","food","feeling sick","chills","fever","weakness"],
+    description: "Illness caused by eating contaminated food. Symptoms usually start 1–8 hours after eating and include vomiting, diarrhoea, and cramps.",
+    action: "green",
+    actionText: "Rest your stomach, then slowly sip fluids. Avoid solid food until vomiting stops. See a doctor if symptoms are severe or last more than 48 hours.",
+    tags: ["bacterial","viral","gastrointestinal","non-contagious person-to-person"]
+  },
+  // ── CARDIOVASCULAR ──
+  {
+    name: "Hypertension (High Blood Pressure)",
+    emoji: "💗",
+    keywords: ["high blood pressure","headache","dizziness","blurred vision","chest pain","shortness of breath","nosebleed","pounding heartbeat","fatigue","confusion"],
+    description: "Persistently elevated blood pressure that strains the heart and arteries. Often called the 'silent killer' as it has few obvious symptoms until serious.",
+    action: "yellow",
+    actionText: "See a doctor for blood pressure monitoring. Lifestyle changes (diet, exercise, less salt) and medication can control it effectively.",
+    tags: ["cardiovascular","chronic","common","manageable"]
+  },
+  {
+    name: "Coronary Artery Disease",
+    emoji: "❤️",
+    keywords: ["chest pain","chest tightness","angina","shortness of breath","pain on exertion","pain in left arm","jaw pain","fatigue","dizziness","palpitations","sweating","nausea"],
+    description: "Narrowing of the coronary arteries due to plaque buildup, reducing blood flow to the heart. Leading cause of heart attacks.",
+    action: "red",
+    actionText: "See a doctor urgently. If you have sudden severe chest pain radiating to your arm or jaw, call 911 immediately — this could be a heart attack.",
+    tags: ["cardiovascular","serious","chronic","emergency risk"]
+  },
+  {
+    name: "Atrial Fibrillation",
+    emoji: "💓",
+    keywords: ["irregular heartbeat","heart palpitations","palpitations","racing heart","fluttering heart","shortness of breath","fatigue","dizziness","chest discomfort","weakness","lightheaded"],
+    description: "An irregular, often rapid heart rhythm that can cause poor blood flow. Significantly increases stroke risk if untreated.",
+    action: "yellow",
+    actionText: "See a doctor promptly. AFib needs proper diagnosis with an ECG. Treatment may include blood thinners to prevent stroke.",
+    tags: ["cardiovascular","arrhythmia","stroke risk","requires treatment"]
+  },
+  {
+    name: "Heart Failure",
+    emoji: "🫀",
+    keywords: ["shortness of breath","breathless lying down","swollen ankles","swollen legs","edema","fatigue","weakness","rapid heartbeat","persistent cough","wheezing","reduced exercise tolerance","fluid weight gain"],
+    description: "The heart can't pump blood efficiently enough to meet the body's needs. Causes fluid buildup, breathlessness, and extreme fatigue.",
+    action: "red",
+    actionText: "See a doctor urgently. Heart failure requires careful management with medications, lifestyle changes, and regular monitoring.",
+    tags: ["cardiovascular","serious","chronic","requires specialist care"]
+  },
+  {
+    name: "Takayasu Arteritis",
+    emoji: "🩸",
+    keywords: ["arm pain","arm weakness","pulse difference between arms","no pulse in arm","dizziness","headache","visual disturbance","fatigue","fever","weight loss","high blood pressure","neck pain","jaw pain"],
+    description: "A rare inflammatory disease affecting the aorta and major arteries. Can cause reduced or absent pulse in the arms and serious vascular complications.",
+    action: "red",
+    actionText: "See a specialist urgently. Requires immunosuppressive therapy.",
+    tags: ["rare","autoimmune","vascular","serious"]
+  },
+  {
+    name: "Brugada Syndrome",
+    emoji: "⚡",
+    keywords: ["sudden fainting","syncope","palpitations","racing heart","sudden cardiac arrest","chest pain","irregular heartbeat","seizure like episode","night sweats","breathing difficulty at night"],
+    description: "A rare genetic heart condition causing abnormal electrical activity that can trigger dangerous arrhythmias and sudden cardiac arrest.",
+    action: "red",
+    actionText: "See a cardiologist immediately. Brugada syndrome can cause sudden death without warning — specialist evaluation is critical.",
+    tags: ["rare","cardiac","genetic","life-threatening"]
+  },
+  {
+    name: "Prinzmetal Angina",
+    emoji: "💔",
+    keywords: ["chest pain at rest","chest pain at night","chest pain early morning","chest tightness at rest","chest spasm","chest pressure at rest","heart pain without exertion","chest pain wakes up"],
+    description: "Chest pain caused by coronary artery spasm rather than blockage. Occurs at rest, often at night or early morning.",
+    action: "red",
+    actionText: "See a doctor urgently. Prinzmetal angina can trigger dangerous arrhythmias — it needs ECG monitoring and medication.",
+    tags: ["cardiovascular","rare","chest pain","requires specialist"]
+  },
+  {
+    name: "Cardiac Amyloidosis",
+    emoji: "🫀",
+    keywords: ["shortness of breath","fatigue","swollen ankles","dizziness","fainting","irregular heartbeat","low blood pressure","weight loss","tingling hands","carpal tunnel","thick heart"],
+    description: "Abnormal protein deposits in the heart muscle, stiffening it and impairing function. Often underdiagnosed.",
+    action: "red",
+    actionText: "See a cardiologist. Requires specialised imaging and biopsy for diagnosis. Newer targeted therapies are now available.",
+    tags: ["rare","cardiac","protein disorder","serious"]
+  },
+  // ── RESPIRATORY ──
+  {
+    name: "COPD",
+    emoji: "🫁",
+    keywords: ["chronic cough","persistent cough","cough with mucus","shortness of breath","breathless on exertion","wheezing","chest tightness","frequent chest infections","blue lips","smoker","smoking history"],
+    description: "A progressive lung disease causing obstructed airflow. Strongly linked to smoking. Causes chronic cough, mucus, and breathlessness.",
+    action: "yellow",
+    actionText: "See a doctor for spirometry testing. Stopping smoking is the most important step. Inhalers and pulmonary rehab help manage symptoms.",
+    tags: ["respiratory","chronic","progressive","linked to smoking"]
+  },
+  {
+    name: "Community-Acquired Pneumonia",
+    emoji: "🫁",
+    keywords: ["fever","cough","productive cough","cough with phlegm","chest pain breathing","shortness of breath","fatigue","chills","sweating","rapid breathing","confusion elderly","rust coloured sputum"],
+    description: "Infection of the lungs acquired outside of hospital. Can range from mild to life-threatening, especially in elderly patients.",
+    action: "yellow",
+    actionText: "See a doctor promptly. Bacterial pneumonia needs antibiotics. Severe cases require hospitalisation.",
+    tags: ["bacterial","viral","respiratory","serious in elderly"]
+  },
+  {
+    name: "Pulmonary Embolism",
+    emoji: "🚨",
+    keywords: ["sudden shortness of breath","sharp chest pain","coughing blood","rapid heart rate","dizziness","fainting","leg swelling","leg pain","recent surgery","long flight","immobility"],
+    description: "A blood clot blocking an artery in the lungs. A medical emergency — can be rapidly fatal if not treated.",
+    action: "red",
+    actionText: "Call 911 immediately. Pulmonary embolism is life-threatening. Do not wait — go to emergency right now.",
+    tags: ["emergency","life-threatening","blood clot","requires immediate care"]
+  },
+  {
+    name: "Sarcoidosis",
+    emoji: "🫁",
+    keywords: ["persistent cough","shortness of breath","fatigue","swollen lymph nodes","skin rash","red bumps on legs","eye inflammation","joint pain","fever","weight loss","night sweats","blurred vision"],
+    description: "An inflammatory disease where abnormal clusters of cells form in organs, most commonly the lungs and lymph nodes.",
+    action: "yellow",
+    actionText: "See a doctor for chest X-ray and blood tests. Many cases resolve on their own; severe cases need corticosteroids.",
+    tags: ["inflammatory","rare","multi-organ","autoimmune-related"]
+  },
+  {
+    name: "Idiopathic Pulmonary Fibrosis",
+    emoji: "🫁",
+    keywords: ["progressive shortness of breath","dry cough","clubbing fingers","fatigue","weight loss","breathless walking","breathless on exertion","cough that doesnt go away"],
+    description: "A progressive scarring of lung tissue with no known cause. Lung function gradually deteriorates over time.",
+    action: "red",
+    actionText: "See a pulmonologist urgently. No cure but anti-fibrotic medications can slow progression. Early diagnosis matters.",
+    tags: ["rare","progressive","respiratory","serious"]
+  },
+  {
+    name: "Alpha-1 Antitrypsin Deficiency",
+    emoji: "🧬",
+    keywords: ["shortness of breath","wheezing","chronic cough","frequent lung infections","jaundice","liver problems","emphysema","young age COPD","non smoker lung disease","fatigue"],
+    description: "A genetic disorder causing low levels of a protective protein, leading to lung damage and liver disease, often in younger non-smokers.",
+    action: "yellow",
+    actionText: "See a pulmonologist and hepatologist. Genetic testing confirms diagnosis. Augmentation therapy is available.",
+    tags: ["genetic","rare","respiratory","liver"]
+  },
+  {
+    name: "Hypersensitivity Pneumonitis",
+    emoji: "🌾",
+    keywords: ["cough","shortness of breath","fatigue","fever","chills","after exposure to dust","mould exposure","bird exposure","farmer lung","breathless","chest tightness","weight loss"],
+    description: "Lung inflammation caused by an immune reaction to inhaled substances like mould, dust, or bird droppings.",
+    action: "yellow",
+    actionText: "See a doctor and identify the trigger — removing the exposure is the most critical step. Steroids may be needed for severe cases.",
+    tags: ["respiratory","immune","occupational","environmental"]
+  },
+  // ── NEUROLOGICAL ──
+  {
+    name: "Epilepsy",
+    emoji: "⚡",
+    keywords: ["seizures","seizure","convulsions","loss of consciousness","staring spells","uncontrolled movements","jerking movements","confusion after episode","biting tongue","aura","deja vu episodes","shaking uncontrolled"],
+    description: "A neurological disorder characterised by recurrent, unprovoked seizures due to abnormal electrical activity in the brain.",
+    action: "yellow",
+    actionText: "See a neurologist. Do not drive until seizures are controlled. Call 911 if a seizure lasts more than 5 minutes.",
+    tags: ["neurological","chronic","manageable","requires specialist"]
+  },
+  {
+    name: "Stroke",
+    emoji: "🧠",
+    keywords: ["sudden face drooping","facial weakness","arm weakness","speech difficulty","slurred speech","sudden confusion","sudden severe headache","sudden vision loss","sudden dizziness","loss of balance","numbness one side","FAST"],
+    description: "A blood clot blocks blood flow to part of the brain, causing brain cells to die. Time is critical — every minute matters.",
+    action: "red",
+    actionText: "Call 911 immediately. Use FAST: Face drooping, Arm weakness, Speech difficulty, Time to call. Clot-busting treatment must be given within hours.",
+    tags: ["emergency","life-threatening","neurological","requires immediate care"]
+  },
+  {
+    name: "Multiple Sclerosis",
+    emoji: "🧠",
+    keywords: ["numbness","tingling","vision problems","blurred vision","optic neuritis","fatigue","weakness","balance problems","coordination problems","bladder problems","memory problems","cognitive fog","muscle spasms","heat sensitivity"],
+    description: "An autoimmune disease where the immune system attacks myelin sheaths of nerves, causing wide-ranging neurological symptoms.",
+    action: "yellow",
+    actionText: "See a neurologist. MRI can help confirm diagnosis. Disease-modifying therapies can significantly slow progression.",
+    tags: ["autoimmune","neurological","chronic","progressive"]
+  },
+  {
+    name: "Parkinson's Disease",
+    emoji: "🤲",
+    keywords: ["tremor","resting tremor","shaking hands","muscle stiffness","rigidity","slow movement","balance problems","shuffling walk","small handwriting","soft voice","loss of smell","constipation","sleep problems"],
+    description: "A progressive neurological disorder affecting movement, caused by loss of dopamine-producing neurons. Tremor, rigidity, and slow movement are hallmarks.",
+    action: "yellow",
+    actionText: "See a neurologist. While there is no cure, medications like levodopa significantly improve quality of life.",
+    tags: ["neurological","progressive","chronic","manageable"]
+  },
+  {
+    name: "Guillain-Barré Syndrome",
+    emoji: "⚡",
+    keywords: ["weakness starting in legs","ascending weakness","tingling feet","tingling legs","numbness feet","progressive weakness","difficulty walking","facial weakness","difficulty swallowing","breathing difficulty","weakness after infection","reflexes gone"],
+    description: "A rare condition where the immune system attacks peripheral nerves, causing rapidly progressive weakness starting from the legs upward.",
+    action: "red",
+    actionText: "Go to emergency immediately. GBS can affect breathing — hospitalisation is essential. Most patients recover with treatment.",
+    tags: ["rare","neurological","emergency","autoimmune"]
+  },
+  {
+    name: "Narcolepsy",
+    emoji: "😴",
+    keywords: ["excessive daytime sleepiness","falling asleep suddenly","cataplexy","sudden muscle weakness with emotion","sleep paralysis","hallucinations falling asleep","very sleepy during day","uncontrollable sleep"],
+    description: "A chronic sleep disorder causing overwhelming daytime drowsiness and sudden sleep attacks. May include cataplexy — sudden loss of muscle tone triggered by emotion.",
+    action: "yellow",
+    actionText: "See a sleep specialist for a sleep study. Stimulant medications and lifestyle adjustments can help manage symptoms.",
+    tags: ["neurological","sleep disorder","chronic","manageable"]
+  },
+  {
+    name: "Transverse Myelitis",
+    emoji: "🦴",
+    keywords: ["weakness in legs","paralysis","numbness below certain level","bowel problems","bladder problems","back pain","shooting pain","sudden weakness","nerve problem after infection"],
+    description: "Inflammation of the spinal cord causing weakness, sensory changes, and bladder/bowel problems below the level of inflammation.",
+    action: "red",
+    actionText: "Go to emergency immediately. Rapid treatment with steroids can limit permanent damage. Urgent MRI is needed.",
+    tags: ["rare","neurological","emergency","autoimmune"]
+  },
+  // ── GASTROINTESTINAL ──
+  {
+    name: "GERD (Acid Reflux)",
+    emoji: "🔥",
+    keywords: ["heartburn","acid reflux","burning chest","burning throat","regurgitation","sour taste","chest discomfort after eating","difficulty swallowing","chronic cough","hoarse voice","worse lying down","worse after meals"],
+    description: "Stomach acid frequently flows back into the oesophagus, causing heartburn and irritation. Very common and manageable.",
+    action: "green",
+    actionText: "Avoid trigger foods (spicy, fatty, citrus, coffee, alcohol). Eat smaller meals. Antacids help. See a doctor if symptoms are frequent or severe.",
+    tags: ["gastrointestinal","common","chronic","manageable"]
+  },
+  {
+    name: "Irritable Bowel Syndrome (IBS)",
+    emoji: "🫃",
+    keywords: ["abdominal pain","stomach cramps","bloating","gas","diarrhoea","constipation","alternating bowel habits","mucus in stool","symptoms after eating","symptoms relieved by bowel movement","stress worsens"],
+    description: "A common disorder affecting the large intestine. Causes cramping, bloating, and altered bowel habits without structural damage.",
+    action: "green",
+    actionText: "See a doctor to rule out other causes. Dietary changes, stress management, and medication can help control symptoms.",
+    tags: ["gastrointestinal","common","chronic","manageable"]
+  },
+  {
+    name: "Crohn's Disease",
+    emoji: "🦠",
+    keywords: ["diarrhoea","abdominal pain","weight loss","fatigue","blood in stool","mouth ulcers","joint pain","skin problems","eye problems","fever","reduced appetite","abdominal cramping","perianal problems"],
+    description: "A chronic inflammatory bowel disease that can affect any part of the digestive tract. Causes painful flare-ups and can lead to serious complications.",
+    action: "yellow",
+    actionText: "See a gastroenterologist. Crohn's needs long-term management with anti-inflammatory medications and sometimes surgery.",
+    tags: ["autoimmune","gastrointestinal","chronic","IBD"]
+  },
+  {
+    name: "Ulcerative Colitis",
+    emoji: "🦠",
+    keywords: ["bloody diarrhoea","diarrhoea with blood","abdominal cramping","urgency to defecate","rectal pain","weight loss","fatigue","fever","joint pain","eye inflammation","skin lesions","mouth ulcers"],
+    description: "An inflammatory bowel disease affecting the colon and rectum. Causes ulcers in the colon lining, leading to bloody diarrhoea and pain.",
+    action: "yellow",
+    actionText: "See a gastroenterologist. Requires long-term medication. Severe flares may need hospitalisation.",
+    tags: ["autoimmune","gastrointestinal","chronic","IBD"]
+  },
+  {
+    name: "Coeliac Disease",
+    emoji: "🌾",
+    keywords: ["diarrhoea","bloating","gas","abdominal pain","weight loss","fatigue","anaemia","mouth ulcers","skin rash","itchy rash","joint pain","after eating gluten","wheat intolerance","bone pain"],
+    description: "An autoimmune condition where eating gluten triggers an immune response that damages the small intestine lining, impairing nutrient absorption.",
+    action: "yellow",
+    actionText: "See a doctor for blood tests and possible biopsy. A strict lifelong gluten-free diet is the only treatment — but it works very well.",
+    tags: ["autoimmune","gastrointestinal","dietary","manageable"]
+  },
+  {
+    name: "Autoimmune Hepatitis",
+    emoji: "🫀",
+    keywords: ["fatigue","jaundice","yellow skin","yellow eyes","abdominal pain","joint pain","nausea","loss of appetite","itching","dark urine","pale stool","liver problems","enlarged liver"],
+    description: "The immune system attacks the liver, causing ongoing inflammation that can lead to cirrhosis if untreated.",
+    action: "yellow",
+    actionText: "See a hepatologist urgently. Blood tests and liver biopsy confirm diagnosis. Immunosuppressants usually achieve remission.",
+    tags: ["autoimmune","liver","chronic","requires specialist"]
+  },
+  {
+    name: "Eosinophilic Oesophagitis",
+    emoji: "🍽️",
+    keywords: ["difficulty swallowing","food getting stuck","chest pain","heartburn","food impaction","vomiting","upper abdominal pain","not responding to reflux treatment","food allergies"],
+    description: "A chronic immune condition where white blood cells build up in the oesophagus, causing swallowing difficulty.",
+    action: "yellow",
+    actionText: "See a gastroenterologist. Dietary changes, swallowed steroids, and acid suppression are the main treatments.",
+    tags: ["rare","gastrointestinal","allergic","chronic"]
+  },
+  {
+    name: "Carcinoid Syndrome",
+    emoji: "🔬",
+    keywords: ["flushing","facial flushing","diarrhoea","wheezing","heart palpitations","abdominal cramping","skin rash","low blood pressure","weight loss","fatigue","episodic flushing"],
+    description: "Symptoms caused by hormone-secreting neuroendocrine tumours. The classic triad is flushing, diarrhoea, and wheezing.",
+    action: "red",
+    actionText: "See a doctor urgently — requires imaging and blood/urine tests. Specialist oncological management is needed.",
+    tags: ["rare","cancer","neuroendocrine","serious"]
+  },
+  // ── RHEUMATOLOGICAL / AUTOIMMUNE ──
+  {
+    name: "Rheumatoid Arthritis",
+    emoji: "🦴",
+    keywords: ["joint pain","joint swelling","morning stiffness","stiff joints morning","symmetrical joint pain","swollen knuckles","fatigue","small joint pain","wrist pain","finger joint pain","warm joints","joint deformity"],
+    description: "A chronic autoimmune disease causing painful inflammation in joints, especially small joints of the hands and feet.",
+    action: "yellow",
+    actionText: "See a rheumatologist. Early treatment with DMARDs prevents joint destruction and disability.",
+    tags: ["autoimmune","joint","chronic","requires specialist"]
+  },
+  {
+    name: "Systemic Lupus Erythematosus (Lupus)",
+    emoji: "🦋",
+    keywords: ["butterfly rash","malar rash","rash on face","joint pain","fatigue","fever","sun sensitivity","hair loss","mouth ulcers","chest pain","kidney problems","anaemia","photosensitivity"],
+    description: "A systemic autoimmune disease that can affect almost any organ. The butterfly-shaped facial rash is a classic sign.",
+    action: "yellow",
+    actionText: "See a rheumatologist. Lupus needs long-term management; flares can be serious. Sun protection is essential.",
+    tags: ["autoimmune","multi-organ","chronic","requires specialist"]
+  },
+  {
+    name: "Ankylosing Spondylitis",
+    emoji: "🦴",
+    keywords: ["lower back pain","back stiffness morning","sacroiliac pain","hip pain","pain improves with exercise","pain worse with rest","neck stiffness","fatigue","eye inflammation","heel pain","chest tightness"],
+    description: "A form of inflammatory arthritis primarily affecting the spine, causing pain and stiffness that is worse after rest and better with movement.",
+    action: "yellow",
+    actionText: "See a rheumatologist. NSAIDs, physiotherapy, and biologic medications can control inflammation and maintain mobility.",
+    tags: ["autoimmune","spine","chronic","requires specialist"]
+  },
+  {
+    name: "Sjögren's Syndrome",
+    emoji: "💧",
+    keywords: ["dry eyes","dry mouth","difficulty swallowing","joint pain","fatigue","dry skin","gland swelling","peripheral neuropathy","cognitive fog","brain fog","dental problems"],
+    description: "An autoimmune disease primarily attacking moisture-producing glands, causing dry eyes and mouth. Can also affect joints and nerves.",
+    action: "yellow",
+    actionText: "See a rheumatologist. Artificial tears and saliva substitutes help. Regular dental care is essential to prevent tooth decay.",
+    tags: ["autoimmune","chronic","multi-organ","manageable"]
+  },
+  {
+    name: "Polymyalgia Rheumatica",
+    emoji: "💪",
+    keywords: ["shoulder pain","hip pain","morning stiffness","stiffness lasting hours","aching muscles","difficulty raising arms","difficulty getting up","fatigue","weight loss","fever","sudden onset stiffness","older adult"],
+    description: "An inflammatory condition causing muscle pain and stiffness in the shoulders, neck, and hips. Almost exclusively affects people over 50.",
+    action: "yellow",
+    actionText: "See a doctor — responds dramatically to corticosteroids. Must be distinguished from giant cell arteritis, which can cause blindness.",
+    tags: ["autoimmune","inflammatory","older adults","steroid-responsive"]
+  },
+  {
+    name: "Giant Cell Arteritis",
+    emoji: "🚨",
+    keywords: ["severe headache","temporal headache","scalp tenderness","jaw pain when chewing","vision loss","sudden vision loss","double vision","shoulder pain","fatigue","fever","temporal artery tender"],
+    description: "Inflammation of large arteries, especially in the head. Can cause permanent blindness if untreated. Often coexists with polymyalgia rheumatica.",
+    action: "red",
+    actionText: "See a doctor immediately — start steroids urgently if vision is threatened. Delay can cause permanent blindness.",
+    tags: ["emergency","autoimmune","vision-threatening","serious"]
+  },
+  {
+    name: "Dermatomyositis",
+    emoji: "💜",
+    keywords: ["muscle weakness","proximal muscle weakness","difficulty getting up","difficulty raising arms","skin rash","purple rash eyelids","heliotrope rash","knuckle rash","fatigue","difficulty swallowing","lung problems"],
+    description: "An inflammatory disease causing muscle weakness and a distinctive skin rash. Associated with internal malignancy in adults.",
+    action: "yellow",
+    actionText: "See a rheumatologist urgently. Requires cancer screening in adults. Immunosuppressants improve muscle strength.",
+    tags: ["autoimmune","rare","muscle","requires cancer screening"]
+  },
+  {
+    name: "Antiphospholipid Syndrome",
+    emoji: "🩸",
+    keywords: ["blood clots","recurrent blood clots","DVT","stroke young person","miscarriage","recurrent miscarriage","pulmonary embolism","skin mottling","thrombocytopenia","headache"],
+    description: "An autoimmune disorder causing blood clots in arteries and veins. A major cause of recurrent miscarriage and stroke in young people.",
+    action: "red",
+    actionText: "See a haematologist or rheumatologist. Long-term blood thinners are required to prevent life-threatening clots.",
+    tags: ["autoimmune","blood clots","serious","requires anticoagulation"]
+  },
+  {
+    name: "Behçet's Disease",
+    emoji: "🔴",
+    keywords: ["mouth ulcers","recurrent mouth ulcers","genital ulcers","eye inflammation","uveitis","skin lesions","joint pain","headache","venous thrombosis","rash"],
+    description: "A rare multi-system inflammatory disorder causing recurring mouth and genital ulcers, eye inflammation, and skin lesions.",
+    action: "yellow",
+    actionText: "See a rheumatologist. Treatment varies by organ involvement — colchicine, corticosteroids, and biologics are used.",
+    tags: ["rare","autoimmune","multi-organ","chronic"]
+  },
+  // ── ENDOCRINE / METABOLIC ──
+  {
+    name: "Type 2 Diabetes",
+    emoji: "🩸",
+    keywords: ["excessive thirst","frequent urination","unexplained weight loss","blurred vision","fatigue","slow healing wounds","frequent infections","tingling feet","numbness feet","dark skin patches","always hungry"],
+    description: "A metabolic disorder where the body doesn't use insulin effectively, leading to high blood sugar that can damage organs over time.",
+    action: "yellow",
+    actionText: "See a doctor for blood glucose testing. Type 2 diabetes can often be managed with diet, exercise, and medication. Early action prevents complications.",
+    tags: ["metabolic","chronic","common","manageable"]
+  },
+  {
+    name: "Hypothyroidism",
+    emoji: "🦋",
+    keywords: ["fatigue","weight gain","feeling cold","cold intolerance","dry skin","hair loss","constipation","depression","slow heart rate","muscle weakness","memory problems","brain fog","puffy face","hoarse voice"],
+    description: "The thyroid gland doesn't produce enough thyroid hormone, slowing metabolism. Very common, especially in women.",
+    action: "yellow",
+    actionText: "See a doctor for a simple blood test (TSH). Daily thyroid hormone replacement tablets are very effective.",
+    tags: ["endocrine","common","manageable","treatable"]
+  },
+  {
+    name: "Hyperthyroidism",
+    emoji: "⚡",
+    keywords: ["unexplained weight loss","rapid heartbeat","palpitations","anxiety","nervousness","tremor","sweating","heat intolerance","feeling hot","frequent bowel movements","eye bulging","goitre","fatigue","insomnia"],
+    description: "The thyroid gland is overactive, producing too much hormone and speeding up metabolism.",
+    action: "yellow",
+    actionText: "See a doctor for blood tests and thyroid scan. Treatment options include medication, radioactive iodine, or surgery.",
+    tags: ["endocrine","common","treatable","requires specialist"]
+  },
+  {
+    name: "Addison's Disease",
+    emoji: "🌑",
+    keywords: ["extreme fatigue","weight loss","low blood pressure","dizziness on standing","salt craving","skin darkening","nausea","vomiting","abdominal pain","muscle weakness","depression","adrenal crisis"],
+    description: "The adrenal glands don't produce enough cortisol. Can cause a life-threatening adrenal crisis under stress.",
+    action: "yellow",
+    actionText: "See a doctor for cortisol and ACTH testing. Requires lifelong steroid replacement. Carry an emergency injection kit for crises.",
+    tags: ["endocrine","rare","autoimmune","lifelong management"]
+  },
+  {
+    name: "Cushing's Syndrome",
+    emoji: "🌕",
+    keywords: ["weight gain","central obesity","buffalo hump","moon face","stretch marks","purple stretch marks","easy bruising","muscle weakness","high blood pressure","high blood sugar","acne","irregular periods","depression"],
+    description: "Caused by prolonged exposure to high cortisol levels, either from steroid medication or a tumour.",
+    action: "yellow",
+    actionText: "See an endocrinologist. Diagnosis involves 24-hour urine and salivary cortisol tests. Treatment depends on the cause.",
+    tags: ["endocrine","rare","hormonal","requires specialist"]
+  },
+  {
+    name: "Phaeochromocytoma",
+    emoji: "⚡",
+    keywords: ["episodic high blood pressure","sudden high blood pressure","pounding headache","sweating episodes","palpitations","pallor","anxiety attacks","tremor","weight loss","episodes of symptoms"],
+    description: "A rare adrenal gland tumour secreting adrenaline in bursts, causing dramatic blood pressure spikes and the classic triad of headache, sweating, and palpitations.",
+    action: "red",
+    actionText: "See an endocrinologist urgently. Requires specialised blood/urine tests and imaging. Surgical removal is the main treatment.",
+    tags: ["rare","endocrine","tumour","serious"]
+  },
+  {
+    name: "Acromegaly",
+    emoji: "🦴",
+    keywords: ["large hands","large feet","shoe size increasing","facial features changing","jaw enlargement","prominent brow","gaps between teeth","joint pain","sweating","headache","vision problems","carpal tunnel","sleep apnoea"],
+    description: "Caused by excess growth hormone from a pituitary tumour. Causes gradual enlargement of the hands, feet, and facial features.",
+    action: "yellow",
+    actionText: "See an endocrinologist. MRI of the pituitary is needed. Surgery is usually the first-line treatment.",
+    tags: ["rare","endocrine","pituitary","hormonal"]
+  },
+  // ── HAEMATOLOGICAL ──
+  {
+    name: "Iron Deficiency Anaemia",
+    emoji: "🩸",
+    keywords: ["fatigue","weakness","pale skin","shortness of breath","dizziness","headache","cold hands","cold feet","brittle nails","spoon shaped nails","craving ice","restless legs","pale conjunctiva"],
+    description: "The most common type of anaemia, caused by insufficient iron to make haemoglobin. Often due to blood loss, poor diet, or malabsorption.",
+    action: "yellow",
+    actionText: "See a doctor for blood tests. Iron supplements treat the deficiency — but the underlying cause must also be found.",
+    tags: ["haematological","common","treatable","investigate cause"]
+  },
+  {
+    name: "Sickle Cell Disease",
+    emoji: "🔴",
+    keywords: ["pain crisis","severe pain","bone pain","fatigue","anaemia","jaundice","swollen hands","swollen feet","frequent infections","stroke","leg ulcers","acute chest syndrome","spleen pain"],
+    description: "A genetic blood disorder where red blood cells are misshapen and can block blood flow, causing pain crises and serious organ complications.",
+    action: "yellow",
+    actionText: "See a haematologist. Pain crises need prompt treatment. Regular monitoring and hydroxyurea therapy can reduce crisis frequency.",
+    tags: ["genetic","haematological","chronic","serious"]
+  },
+  {
+    name: "Haemophilia A",
+    emoji: "🩸",
+    keywords: ["excessive bleeding","prolonged bleeding","easy bruising","spontaneous bleeding","joint bleeding","muscle bleeding","nosebleeds","blood in urine","bleeding after minor injury","bleeding after surgery"],
+    description: "A genetic clotting disorder where Factor VIII is deficient, causing difficulty stopping bleeding.",
+    action: "yellow",
+    actionText: "See a haematologist. Factor VIII replacement therapy is the main treatment. Avoid aspirin and NSAIDs. Carry a medical alert card.",
+    tags: ["genetic","haematological","clotting disorder","requires specialist"]
+  },
+  // ── RENAL ──
+  {
+    name: "Chronic Kidney Disease",
+    emoji: "🫘",
+    keywords: ["swollen ankles","swollen feet","fatigue","shortness of breath","nausea","decreased urination","foamy urine","high blood pressure","itching","muscle cramps","loss of appetite","anaemia","weakness","confusion"],
+    description: "Gradual loss of kidney function over time. Often caused by diabetes or hypertension. Can progress to kidney failure requiring dialysis.",
+    action: "yellow",
+    actionText: "See a nephrologist. Managing blood pressure and blood sugar is critical. Diet changes and medication slow progression.",
+    tags: ["renal","chronic","progressive","serious"]
+  },
+  {
+    name: "Nephrotic Syndrome",
+    emoji: "🫘",
+    keywords: ["severe swelling","puffy eyes","swollen legs","swollen ankles","foamy urine","protein in urine","weight gain fluid","fatigue","high cholesterol","blood clots","low albumin"],
+    description: "A kidney disorder causing excessive protein loss in urine, leading to severe swelling, low blood protein, and high cholesterol.",
+    action: "yellow",
+    actionText: "See a nephrologist urgently. Kidney biopsy may be needed. Treatment depends on the underlying cause.",
+    tags: ["renal","serious","requires specialist","multi-cause"]
+  },
+  // ── DERMATOLOGICAL ──
+  {
+    name: "Psoriasis",
+    emoji: "🔴",
+    keywords: ["red patches","scaly skin","silver scales","plaques on skin","itchy skin","dry skin","nail pitting","joint pain","scalp scaling","elbow rash","knee rash","flaking skin"],
+    description: "A chronic autoimmune skin condition causing rapid skin cell buildup that forms scales and red patches. Can be associated with joint disease.",
+    action: "green",
+    actionText: "See a dermatologist. Topical treatments, light therapy, and systemic medications can effectively control psoriasis.",
+    tags: ["autoimmune","skin","chronic","manageable"]
+  },
+  {
+    name: "Pemphigus Vulgaris",
+    emoji: "🔴",
+    keywords: ["blisters in mouth","mouth blisters","painful blisters","skin blisters","blisters that rupture","erosions on skin","mouth sores","skin peeling","painful mouth","fragile blisters"],
+    description: "A rare serious autoimmune blistering disease affecting the skin and mucous membranes. Blisters rupture easily, leaving painful raw areas.",
+    action: "red",
+    actionText: "See a dermatologist urgently. Untreated pemphigus can be life-threatening. Immunosuppressants and corticosteroids are required.",
+    tags: ["rare","autoimmune","skin","serious"]
+  },
+  {
+    name: "Epidermolysis Bullosa",
+    emoji: "🔴",
+    keywords: ["fragile skin","skin blisters from minor trauma","blisters from rubbing","blister after minor injury","blistering skin","skin tears easily","mouth blisters","difficulty swallowing","nail problems","scarring skin"],
+    description: "A group of rare genetic disorders causing extremely fragile skin that blisters with minimal trauma.",
+    action: "yellow",
+    actionText: "See a dermatologist specialising in EB. Wound care is the mainstay of management. Gene therapy trials are ongoing.",
+    tags: ["rare","genetic","skin","chronic"]
+  },
+  // ── INFECTIOUS DISEASES ──
+  {
+    name: "Lyme Disease",
+    emoji: "🦟",
+    keywords: ["bulls eye rash","expanding rash","tick bite","rash after tick","fatigue","joint pain","muscle aches","headache","fever","facial palsy","bell palsy","heart palpitations","nerve pain","cognitive problems","brain fog"],
+    description: "A bacterial infection transmitted by blacklegged ticks. The bull's-eye rash is the classic sign, though not always present.",
+    action: "yellow",
+    actionText: "See a doctor promptly. Antibiotics are very effective in early-stage Lyme disease. Late diagnosis makes treatment more complex.",
+    tags: ["bacterial","tick-borne","infectious","treatable early"]
+  },
+  {
+    name: "Dengue Fever",
+    emoji: "🦟",
+    keywords: ["high fever","sudden fever","severe headache","pain behind eyes","bone pain","muscle pain","joint pain","rash","nausea","vomiting","fatigue","bleeding","tropical travel","mosquito bite"],
+    description: "A mosquito-borne viral infection causing severe flu-like illness. Severe dengue can cause internal bleeding and is life-threatening.",
+    action: "yellow",
+    actionText: "See a doctor immediately after returning from a tropical area with these symptoms. Supportive care and monitoring are essential.",
+    tags: ["viral","tropical","mosquito-borne","potentially serious"]
+  },
+  {
+    name: "Typhoid Fever",
+    emoji: "🌡️",
+    keywords: ["prolonged fever","sustained fever","abdominal pain","headache","weakness","loss of appetite","constipation","diarrhoea","rash on trunk","travel to developing country","contaminated water"],
+    description: "A bacterial infection from Salmonella typhi, spread through contaminated food and water.",
+    action: "yellow",
+    actionText: "See a doctor — antibiotics are the treatment. Report recent travel history. Vaccination is available for travellers.",
+    tags: ["bacterial","tropical","food-borne","travel-related"]
+  },
+  {
+    name: "Brucellosis",
+    emoji: "🐄",
+    keywords: ["undulant fever","wave like fever","sweating","joint pain","muscle pain","fatigue","headache","animal contact","farm worker","unpasteurised dairy","back pain","depression"],
+    description: "A bacterial infection acquired from animals or unpasteurised dairy products. Causes recurrent fevers and multi-organ involvement.",
+    action: "yellow",
+    actionText: "See a doctor and mention animal or dairy exposure. Requires a combination of antibiotics for 6 weeks.",
+    tags: ["bacterial","zoonotic","occupational","requires prolonged antibiotics"]
+  },
+  {
+    name: "Leishmaniasis",
+    emoji: "🦟",
+    keywords: ["skin sore","painless skin ulcer","non healing ulcer","sand fly bite","tropical travel","fever","weight loss","enlarged spleen","enlarged liver","anaemia","fatigue","darkening skin"],
+    description: "A parasitic disease spread by sandfly bites. Can cause skin ulcers or affect internal organs — the latter being life-threatening.",
+    action: "yellow",
+    actionText: "See a doctor with tropical medicine experience. Treatment depends on the type and severity.",
+    tags: ["parasitic","tropical","sandfly-borne","requires specialist"]
+  },
+  {
+    name: "Q Fever",
+    emoji: "🐑",
+    keywords: ["high fever","severe headache","fatigue","muscle pain","chest pain","cough","nausea","rash","animal contact","farm exposure","abattoir worker","hepatitis","atypical pneumonia"],
+    description: "A bacterial infection acquired from livestock. Causes acute flu-like illness and rarely, chronic endocarditis.",
+    action: "yellow",
+    actionText: "See a doctor and mention animal exposure. Treated with doxycycline.",
+    tags: ["bacterial","zoonotic","occupational","rare"]
+  },
+  // ── GENETIC / CONNECTIVE TISSUE ──
+  {
+    name: "Marfan Syndrome",
+    emoji: "🦢",
+    keywords: ["tall thin build","long arms","long fingers","flexible joints","chest deformity","pectus excavatum","scoliosis","aortic aneurysm","aortic dissection","lens dislocation","myopia","flat feet","heart murmur"],
+    description: "A genetic connective tissue disorder affecting the skeleton, heart, eyes, and blood vessels. The aorta is at risk of life-threatening dissection.",
+    action: "yellow",
+    actionText: "See a cardiologist and geneticist. Regular aortic imaging is essential. Avoid contact sports. Beta-blockers protect the aorta.",
+    tags: ["genetic","connective tissue","multi-organ","requires monitoring"]
+  },
+  {
+    name: "Ehlers-Danlos Syndrome",
+    emoji: "🤸",
+    keywords: ["hypermobile joints","flexible joints","joint dislocation","joint hypermobility","stretchy skin","easy bruising","joint pain","chronic pain","poor wound healing","fragile skin","fatigue"],
+    description: "A group of inherited connective tissue disorders causing hypermobile joints, stretchy skin, and fragile tissues.",
+    action: "yellow",
+    actionText: "See a geneticist or rheumatologist. Physiotherapy, pain management, and avoiding joint injury are key.",
+    tags: ["genetic","connective tissue","chronic","multi-system"]
+  },
+  {
+    name: "Wilson's Disease",
+    emoji: "🟤",
+    keywords: ["liver disease young person","jaundice","tremor","slurred speech","difficulty walking","personality change","psychiatric symptoms","golden brown eye rings","haemolytic anaemia","renal problems"],
+    description: "A genetic disorder causing copper accumulation in the liver, brain, and other organs. Treatable if caught early.",
+    action: "yellow",
+    actionText: "See a hepatologist or neurologist. Copper chelation therapy and zinc supplements prevent progression.",
+    tags: ["genetic","rare","liver","treatable"]
+  },
+  {
+    name: "Haemochromatosis",
+    emoji: "🦀",
+    keywords: ["fatigue","joint pain","abdominal pain","liver disease","diabetes","bronze skin","skin darkening","heart problems","loss of libido","liver cirrhosis","elevated iron","elevated ferritin","arthritis knuckles"],
+    description: "A genetic disorder causing excess iron absorption and accumulation in organs. Common in people of Northern European descent.",
+    action: "yellow",
+    actionText: "See a doctor for iron studies and genetic testing. Regular blood removal (venesection) is highly effective.",
+    tags: ["genetic","common","treatable","requires monitoring"]
+  },
+  {
+    name: "Gaucher Disease",
+    emoji: "🧬",
+    keywords: ["enlarged spleen","enlarged liver","bone pain","bone crisis","anaemia","easy bruising","fatigue","bone fractures","growth delay","neurological problems"],
+    description: "A genetic lysosomal storage disorder causing a fatty substance to accumulate in organs. The most common lysosomal storage disease.",
+    action: "yellow",
+    actionText: "See a metabolic disease specialist. Enzyme replacement therapy is very effective for the most common type.",
+    tags: ["genetic","rare","metabolic","treatable"]
+  },
+  {
+    name: "Phenylketonuria (PKU)",
+    emoji: "🧬",
+    keywords: ["intellectual disability","developmental delay","seizures","behaviour problems","musty odour","pale skin","eczema","newborn screening","phenylalanine high"],
+    description: "A genetic metabolic disorder where the body can't process phenylalanine properly. Causes brain damage if not treated with a special diet from birth.",
+    action: "yellow",
+    actionText: "Managed with a strict low-phenylalanine diet. Detected by newborn screening in Canada. New enzyme therapies now available.",
+    tags: ["genetic","metabolic","dietary management","newborn screening"]
+  },
+  {
+    name: "Acute Intermittent Porphyria",
+    emoji: "🟣",
+    keywords: ["abdominal pain attacks","severe abdominal pain","nausea","vomiting","constipation","confusion","seizures","weakness","psychiatric symptoms","dark urine","port wine urine","red urine","rapid heart rate","attack triggered by medication"],
+    description: "A rare genetic disorder of haem biosynthesis causing attacks of severe abdominal pain, neurological symptoms, and psychiatric disturbance.",
+    action: "red",
+    actionText: "Go to emergency during an attack. IV glucose and haematin stop attacks. Avoid trigger medications, fasting, and alcohol.",
+    tags: ["rare","genetic","metabolic","episodic attacks"]
+  },
+  {
+    name: "Pompe Disease",
+    emoji: "💪",
+    keywords: ["muscle weakness","proximal weakness","difficulty walking","difficulty climbing stairs","respiratory failure","breathing weakness","enlarged heart","mobility problems","elevated CK","fatigue","exercise intolerance"],
+    description: "A rare genetic disorder where glycogen accumulates in muscles due to enzyme deficiency, causing progressive muscle weakness.",
+    action: "yellow",
+    actionText: "See a metabolic neurologist. Enzyme replacement therapy slows disease progression, especially when started early.",
+    tags: ["rare","genetic","metabolic","progressive"]
+  },
+  // ── MUSCULOSKELETAL ──
+  {
+    name: "Osteoarthritis",
+    emoji: "🦴",
+    keywords: ["joint pain","joint stiffness","knee pain","hip pain","hand joint pain","pain worse with activity","cracking joints","reduced range of motion","bony swelling","brief morning stiffness","worse end of day","joint grinding"],
+    description: "The most common form of arthritis, caused by cartilage breakdown. Pain and stiffness worsen with activity and improve with rest.",
+    action: "green",
+    actionText: "Exercise, weight management, and physiotherapy are very effective. See a doctor if joints are severely affected.",
+    tags: ["musculoskeletal","common","chronic","manageable"]
+  },
+  {
+    name: "Gout",
+    emoji: "🦶",
+    keywords: ["sudden severe joint pain","big toe pain","red hot swollen joint","joint attack at night","uric acid","tophi","painful joint","ankle pain","knee pain","warm joint","swollen joint red"],
+    description: "A form of arthritis caused by uric acid crystal deposits in joints. Attacks are sudden and extremely painful, often affecting the big toe.",
+    action: "yellow",
+    actionText: "See a doctor. NSAIDs or colchicine treat acute attacks. Allopurinol lowers uric acid long-term. Avoid alcohol and high-purine foods.",
+    tags: ["metabolic","joint","acute attacks","manageable"]
+  },
+  {
+    name: "Fibromyalgia",
+    emoji: "💜",
+    keywords: ["widespread pain","chronic pain all over","tender points","fatigue","sleep problems","cognitive fog","brain fog","headache","depression","anxiety","numbness","tingling","hypersensitivity to pain","non restorative sleep"],
+    description: "A chronic condition causing widespread musculoskeletal pain, fatigue, sleep issues, and cognitive difficulties. No structural damage is present.",
+    action: "yellow",
+    actionText: "See a doctor or rheumatologist to rule out other causes. Exercise, CBT, sleep improvement, and low-dose antidepressants help.",
+    tags: ["chronic pain","musculoskeletal","non-inflammatory","manageable"]
+  },
+  {
+    name: "Paget's Disease of Bone",
+    emoji: "🦴",
+    keywords: ["bone pain","deformity","bowed legs","enlarged skull","hearing loss","headache","bone fractures","warmth over bone","back pain","hip pain","elevated alkaline phosphatase"],
+    description: "A chronic bone disorder where bone remodelling is disrupted, causing enlarged and weakened bones.",
+    action: "yellow",
+    actionText: "See a doctor for bone-specific blood tests and X-rays. Bisphosphonates are effective at controlling disease activity.",
+    tags: ["bone","chronic","older adults","manageable"]
+  },
+  {
+    name: "Avascular Necrosis",
+    emoji: "🦴",
+    keywords: ["joint pain","hip pain","shoulder pain","knee pain","pain with weight bearing","steroid use","alcohol use","joint collapse","limited range of motion","groin pain"],
+    description: "Death of bone tissue due to interrupted blood supply. Often linked to steroid use, alcohol, or joint injury.",
+    action: "yellow",
+    actionText: "See an orthopaedic specialist. Early cases may be treated with core decompression; advanced cases may require joint replacement.",
+    tags: ["bone","serious","orthopaedic","requires imaging"]
+  },
+  // ── MENTAL HEALTH ──
+  {
+    name: "Major Depressive Disorder",
+    emoji: "🌧️",
+    keywords: ["persistent sadness","low mood","loss of interest","loss of pleasure","fatigue","sleep changes","appetite changes","weight change","concentration problems","worthlessness","hopelessness","suicidal thoughts","crying","withdrawal"],
+    description: "A serious mood disorder causing persistent low mood, loss of interest, and physical symptoms that significantly impair daily life.",
+    action: "yellow",
+    actionText: "Please see a doctor or mental health professional. Effective treatments exist — therapy and/or medication help the majority of people.",
+    tags: ["mental health","common","treatable","requires support"]
+  },
+  {
+    name: "Schizophrenia",
+    emoji: "🧩",
+    keywords: ["hallucinations","hearing voices","delusions","false beliefs","disorganised thinking","disorganised speech","flat affect","social withdrawal","paranoia","seeing things","bizarre behaviour","cognitive problems"],
+    description: "A serious mental health disorder affecting how a person thinks, feels, and perceives reality. Hallucinations and delusions are characteristic.",
+    action: "yellow",
+    actionText: "See a psychiatrist urgently. Antipsychotic medication and psychosocial support are essential. Early treatment dramatically improves outcomes.",
+    tags: ["mental health","serious","requires specialist","manageable with treatment"]
+  },
+  {
+    name: "Bipolar Disorder",
+    emoji: "🔄",
+    keywords: ["mood swings","mania","elevated mood","decreased need for sleep","grandiosity","racing thoughts","impulsive behaviour","depression","irritability","increased energy","reckless behaviour","pressured speech"],
+    description: "A mental health condition causing extreme mood swings between mania and depression.",
+    action: "yellow",
+    actionText: "See a psychiatrist. Mood stabilisers (lithium, valproate) and therapy are very effective. Consistency with treatment is key.",
+    tags: ["mental health","chronic","manageable","requires specialist"]
+  },
+  // ── EYE ──
+  {
+    name: "Glaucoma",
+    emoji: "👁️",
+    keywords: ["gradual vision loss","peripheral vision loss","tunnel vision","eye pressure","blurred vision","halos around lights","eye pain","headache","nausea","sudden vision loss","red eye"],
+    description: "A group of eye conditions that damage the optic nerve, often due to elevated eye pressure. A leading cause of blindness if untreated.",
+    action: "yellow",
+    actionText: "See an ophthalmologist for eye pressure testing. Acute angle-closure glaucoma with sudden pain and vision loss is an emergency.",
+    tags: ["eye","chronic","serious","preventable blindness"]
+  },
+  {
+    name: "Age-Related Macular Degeneration",
+    emoji: "👁️",
+    keywords: ["central vision loss","blurred central vision","distorted vision","straight lines appear wavy","difficulty reading","difficulty recognising faces","dark spot in vision","older adult vision loss"],
+    description: "Deterioration of the macula causing loss of central vision. The leading cause of blindness in adults over 50.",
+    action: "yellow",
+    actionText: "See an ophthalmologist urgently. Wet AMD can be treated with anti-VEGF injections — early treatment preserves vision.",
+    tags: ["eye","age-related","serious","treatable if caught early"]
+  },
+  {
+    name: "Uveitis",
+    emoji: "👁️",
+    keywords: ["eye pain","red eye","light sensitivity","photophobia","blurred vision","floaters","decreased vision","eye inflammation","iritis"],
+    description: "Inflammation inside the eye affecting the uvea. Can be associated with autoimmune conditions and can lead to blindness if untreated.",
+    action: "yellow",
+    actionText: "See an ophthalmologist urgently. Steroid eye drops are the mainstay treatment. Investigate for underlying systemic cause.",
+    tags: ["eye","autoimmune-associated","serious","requires urgent care"]
+  },
+  // ── PAEDIATRIC ──
+  {
+    name: "Kawasaki Disease",
+    emoji: "🌡️",
+    keywords: ["prolonged fever children","fever more than 5 days child","red eyes","strawberry tongue","red cracked lips","rash","swollen lymph node neck","swollen hands","swollen feet","peeling skin fingers","child fever"],
+    description: "A childhood illness causing inflammation in blood vessel walls. The most common acquired heart disease in children — can damage coronary arteries.",
+    action: "red",
+    actionText: "Go to emergency immediately. IV immunoglobulin given within 10 days of fever onset dramatically reduces coronary artery complications.",
+    tags: ["paediatric","emergency","cardiovascular","rare"]
+  },
+  {
+    name: "Juvenile Idiopathic Arthritis",
+    emoji: "🧒",
+    keywords: ["joint pain child","joint swelling child","morning stiffness child","limping child","arthritis under 16","eye inflammation child","uveitis child","fever joint pain child","rash with fever child","growth problems"],
+    description: "The most common form of chronic arthritis in children. Causes joint inflammation, pain, and stiffness, and can affect eyes and growth.",
+    action: "yellow",
+    actionText: "See a paediatric rheumatologist. Regular eye checks are essential. DMARDs and biologics are very effective.",
+    tags: ["paediatric","autoimmune","chronic","requires specialist"]
+  },
+  {
+    name: "Cystic Fibrosis",
+    emoji: "🫁",
+    keywords: ["persistent cough","thick mucus","recurrent lung infections","salty skin","poor growth","failure to thrive","fatty stools","clubbing fingers","nasal polyps","male infertility","pancreatitis","diabetes CF"],
+    description: "A genetic disorder causing thick, sticky mucus in the lungs and digestive system. Requires intensive daily management.",
+    action: "yellow",
+    actionText: "See a CF specialist. CFTR modulator therapies like Trikafta are transformative for eligible patients. Daily airway clearance is essential.",
+    tags: ["genetic","respiratory","digestive","life-limiting"]
+  },
+  // ── ULTRA-RARE & SPECIALIST CONDITIONS ──
+  {
+    name: "Brugada Syndrome",
+    emoji: "⚡",
+    keywords: ["fainting without warning","syncope","unexplained cardiac arrest","cardiac arrest no cause","strange breathing at night","abnormal breathing sleep","sudden collapse","palpitations","no warning faint","cardiac arrest young person","unexplained faint"],
+    description: "A rare genetic heart condition causing dangerous arrhythmias that can lead to sudden cardiac arrest. Often presents with unexplained fainting or nocturnal breathing abnormalities.",
+    action: "red",
+    actionText: "See a cardiologist immediately. An ICD (implantable defibrillator) may be life-saving. Certain medications must be strictly avoided.",
+    tags: ["rare","cardiac","genetic","life-threatening"]
+  },
+  {
+    name: "Loeys-Dietz Syndrome",
+    emoji: "🦢",
+    keywords: ["wide set eyes","hypertelorism","joint hypermobility","joints bend too far","easy bruising","enlarged aorta","aortic aneurysm","bifid uvula","split uvula","uvula split in two","cleft palate","translucent skin","arterial aneurysm","tall thin"],
+    description: "A rare genetic connective tissue disorder causing aortic aneurysms, widely-spaced eyes, a split uvula, and hypermobile joints. High risk of aortic dissection.",
+    action: "red",
+    actionText: "See a cardiologist and geneticist urgently. Regular aortic imaging is essential. Surgical intervention may be needed before the aorta dissects.",
+    tags: ["rare","genetic","connective tissue","life-threatening"]
+  },
+  {
+    name: "Lymphangioleiomyomatosis (LAM)",
+    emoji: "🫁",
+    keywords: ["collapsed lung","pneumothorax","recurrent collapsed lung","milky fluid around lung","chylothorax","breathless young woman","progressive breathlessness woman","breathless stairs","lung cysts","young woman lung disease"],
+    description: "A rare lung disease almost exclusively affecting women, causing cysts in the lung tissue and recurrent collapsed lungs. Milky (chylous) pleural effusions are characteristic.",
+    action: "red",
+    actionText: "See a pulmonologist specialising in rare lung diseases. Sirolimus (rapamycin) can slow progression. Refer to a LAM specialist centre.",
+    tags: ["rare","respiratory","women only","progressive"]
+  },
+  {
+    name: "Goodpasture Syndrome",
+    emoji: "🩸",
+    keywords: ["coughing up blood","haemoptysis","kidney failure rapid","creatinine rising fast","anaemia","blood in urine","haematuria","rapid kidney decline","pulmonary haemorrhage","lung bleeding kidney failure","anti-GBM"],
+    description: "A rare autoimmune disease where antibodies attack the lungs and kidneys simultaneously, causing pulmonary haemorrhage and rapidly progressive kidney failure.",
+    action: "red",
+    actionText: "Call 911 or go to emergency immediately. This is a life-threatening emergency requiring urgent plasma exchange and immunosuppression.",
+    tags: ["rare","autoimmune","emergency","life-threatening"]
+  },
+  {
+    name: "Stiff Person Syndrome",
+    emoji: "🦾",
+    keywords: ["rigid muscles","muscle rigidity","stiff trunk","stiff back all the time","spasms triggered by noise","noise triggers spasm","loud noise spasm","falling due to spasm","rigid abdomen","muscle stiffness constant","trunk rigidity","startle response","falls from spasm"],
+    description: "A rare neurological disorder causing progressive muscle rigidity, mainly in the trunk and back, with violent spasms triggered by sudden stimuli like noise or touch.",
+    action: "yellow",
+    actionText: "See a neurologist. Often misdiagnosed as anxiety. GAD65 antibody blood test can confirm. Diazepam and baclofen help control spasms.",
+    tags: ["rare","neurological","autoimmune","frequently misdiagnosed"]
+  },
+  {
+    name: "Creutzfeldt-Jakob Disease (CJD)",
+    emoji: "🧠",
+    keywords: ["rapid dementia","dementia progressing fast","decline faster than dementia","rapid cognitive decline","involuntary jerking","myoclonus","jerking movements dementia","speech loss rapid","confusion rapid","fast neurological decline","weeks to severe dementia","vision problems dementia"],
+    description: "A rare and fatal prion disease causing the fastest dementia known — deterioration from mild forgetfulness to severe neurological failure in weeks to months.",
+    action: "red",
+    actionText: "Go to emergency immediately and request urgent neurology review. MRI and CSF testing (14-3-3 protein) are needed. This requires specialist management.",
+    tags: ["rare","neurological","fatal","prion disease"]
+  },
+  {
+    name: "Whipple's Disease",
+    emoji: "🦠",
+    keywords: ["migratory joint pain years","joint pain jumping joints","diarrhoea weight loss joint pain","oculomasticatory myorhythmia","eyes moving rhythmically","jaw moving rhythmically","eye movement abnormality","malabsorption","steatorrhoea","chronic diarrhoea joint pain","rare bacterial infection gut"],
+    description: "A rare bacterial infection (Tropheryma whipplei) causing malabsorption, migratory joint pain, and a pathognomonic eye-jaw movement abnormality called oculomasticatory myorhythmia.",
+    action: "yellow",
+    actionText: "See a gastroenterologist. Small bowel biopsy confirms diagnosis. Long-term antibiotics (ceftriaxone then trimethoprim-sulfamethoxazole) are curative.",
+    tags: ["rare","bacterial","gastrointestinal","treatable"]
+  },
+  {
+    name: "Adult Still's Disease",
+    emoji: "🌡️",
+    keywords: ["daily fever weeks","fever every day","quotidian fever","fever spikes then normal","salmon rash","pink rash with fever","rash disappears when fever goes","joint pain fever","enlarged spleen fever","enlarged lymph nodes fever","negative infection tests fever","ferritin very high"],
+    description: "A rare systemic inflammatory disease causing a classic triad: daily spiking fever, a salmon-pink rash that appears with the fever then fades, and joint pain. All infection tests are negative.",
+    action: "yellow",
+    actionText: "See a rheumatologist. Extremely high ferritin is a key diagnostic clue. NSAIDs, steroids, and IL-1/IL-6 inhibitors are used for treatment.",
+    tags: ["rare","autoimmune","systemic","requires specialist"]
+  },
+  {
+    name: "SAPHO Syndrome",
+    emoji: "🦴",
+    keywords: ["chest wall pain","sternoclavicular pain","breastbone swelling","collarbone pain","pustules on palms","pustules on soles","palmoplantar pustulosis","acne severe","bone scan uptake chest","sterile osteomyelitis","painful chest bone","swollen chest wall"],
+    description: "A rare syndrome combining Synovitis, Acne, Pustulosis, Hyperostosis, and Osteitis — inflammatory bone and skin disease causing chest wall pain and pustular skin lesions.",
+    action: "yellow",
+    actionText: "See a rheumatologist. Often misdiagnosed for years. NSAIDs, bisphosphonates, and biologics are used depending on severity.",
+    tags: ["rare","autoimmune","bone","skin"]
+  },
+  {
+    name: "Relapsing Polychondritis",
+    emoji: "👂",
+    keywords: ["red swollen ear","ear cartilage inflamed","ear painful red swollen","earlobe normal but ear red","recurrent ear inflammation","saddle nose","nasal bridge collapsing","nasal cartilage","breathing difficulty nose","tracheal narrowing","cartilage inflammation","eye inflammation ear inflammation"],
+    description: "A rare autoimmune disease that attacks cartilage throughout the body. Characteristically the ear becomes red and painful — but the earlobe (which has no cartilage) is completely spared.",
+    action: "yellow",
+    actionText: "See a rheumatologist. Tracheal involvement can cause life-threatening airway narrowing. Corticosteroids and immunosuppressants are used.",
+    tags: ["rare","autoimmune","cartilage","potentially life-threatening"]
+  },
+  {
+    name: "Thrombotic Thrombocytopenic Purpura (TTP)",
+    emoji: "🚨",
+    keywords: ["bruising low platelets","fragmented red cells","blood film fragments","schistocytes","confusion bruising","kidney failure bruising","thrombocytopenia confusion","microangiopathic haemolysis","MAHA","rapid onset bruising confusion","low platelets neurological","pentad TTP"],
+    description: "A life-threatening blood disorder causing microclots throughout the body, destroying red blood cells and platelets. Causes bruising, confusion, and organ failure over days.",
+    action: "red",
+    actionText: "Call 911 or go to emergency immediately. TTP is fatal without urgent plasma exchange — this is a haematological emergency.",
+    tags: ["rare","haematological","emergency","life-threatening"]
+  },
+  {
+    name: "Paroxysmal Nocturnal Haemoglobinuria (PNH)",
+    emoji: "🩸",
+    keywords: ["dark urine morning","brown urine on waking","dark brown urine","blood clot liver vein","Budd-Chiari","clot unusual site","all blood counts low","pancytopenia","red cells lack proteins","flow cytometry abnormal","haemolytic anaemia","clot young person unusual site"],
+    description: "A rare blood disorder where red cells lack protective surface proteins, making them vulnerable to destruction. Causes dark morning urine, dangerous clots in unusual veins, and low blood counts.",
+    action: "red",
+    actionText: "See a haematologist urgently. Eculizumab dramatically reduces clot risk and haemolysis. Bone marrow transplant may be curative.",
+    tags: ["rare","haematological","clotting","serious"]
+  },
+  {
+    name: "Mastocytosis",
+    emoji: "🟤",
+    keywords: ["brown spots that swell when scratched","Darier sign","skin spots that itch when scratched","recurrent anaphylaxis no trigger","anaphylaxis unknown cause","high tryptase","elevated tryptase","mast cell","urticaria pigmentosa","bone pain","flushing episodes","mast cell disease"],
+    description: "Abnormal accumulation of mast cells in the skin and organs. Classic sign: brown skin spots that wheal and itch when scratched (Darier's sign). Causes recurrent unexplained anaphylaxis.",
+    action: "yellow",
+    actionText: "See a haematologist or allergist. Always carry two epinephrine auto-injectors. Bone marrow biopsy confirms systemic disease.",
+    tags: ["rare","haematological","allergic","requires specialist"]
+  },
+  {
+    name: "Fabry Disease",
+    emoji: "🧬",
+    keywords: ["burning pain hands feet childhood","neuropathic pain child","angiokeratomas","dark red spots abdomen","small red spots skin","stroke young person","posterior stroke","stroke in thirties","stroke back of brain","young stroke no cause","low alpha-galactosidase","kidney disease young","heart thickening"],
+    description: "A genetic lysosomal storage disorder where enzyme deficiency causes glycolipids to accumulate in blood vessels. Causes burning pain in childhood, skin spots, and strokes in young adults.",
+    action: "yellow",
+    actionText: "See a metabolic specialist. Enzyme replacement therapy significantly reduces progression. Test all family members.",
+    tags: ["rare","genetic","metabolic","multi-organ"]
+  },
+  {
+    name: "MELAS Syndrome",
+    emoji: "🧠",
+    keywords: ["stroke young person unusual MRI","stroke MRI doesnt match vessel","elevated lactate","lactic acidosis","hearing loss young","muscle weakness fatigue","maternal inheritance","mother had similar","mitochondrial disease","seizures stroke hearing loss","migraine like headaches","short stature"],
+    description: "A mitochondrial disease (Mitochondrial Encephalomyopathy, Lactic Acidosis, Stroke-like episodes) causing strokes that don't follow vascular territories, hearing loss, and elevated lactate.",
+    action: "yellow",
+    actionText: "See a neurologist specialising in mitochondrial disease. Genetic testing confirms. CoQ10 and other supplements may help. Avoid metformin and valproate.",
+    tags: ["rare","genetic","mitochondrial","neurological"]
+  },
+  {
+    name: "POEMS Syndrome",
+    emoji: "🔬",
+    keywords: ["progressive leg weakness both legs","ascending weakness arms legs","peripheral neuropathy progressive","enlarged lymph nodes neuropathy","enlarged liver neuropathy","skin darkening neuropathy","high VEGF","elevated VEGF","plasma cell disorder neuropathy","organomegaly neuropathy","M protein neuropathy"],
+    description: "A rare plasma cell disorder causing Polyneuropathy, Organomegaly, Endocrinopathy, M-protein, and Skin changes — hence POEMS. Progressive weakness is the hallmark.",
+    action: "yellow",
+    actionText: "See a haematologist and neurologist. Elevated VEGF is a key diagnostic and monitoring marker. Stem cell transplant or radiation may be curative.",
+    tags: ["rare","haematological","neurological","multi-system"]
+  },
+  {
+    name: "Vogt-Koyanagi-Harada Disease",
+    emoji: "👁️",
+    keywords: ["both eyes inflamed same time","bilateral uveitis","white patches eyelashes","white patches eyebrows","poliosis","hearing loss uveitis","vision loss after viral illness","headache neck stiffness then eye inflammation","bilateral eye inflammation","vitiligo eyelashes","losing hearing eye inflammation"],
+    description: "A rare autoimmune disease attacking melanocytes in the eyes, ears, skin, and brain. Causes bilateral uveitis, hearing loss, and characteristic white patches in eyelashes and eyebrows.",
+    action: "yellow",
+    actionText: "See an ophthalmologist and rheumatologist urgently. High-dose steroids must be started promptly to preserve vision and hearing.",
+    tags: ["rare","autoimmune","eye","multi-organ"]
+  },
+  {
+    name: "Erdheim-Chester Disease",
+    emoji: "🔬",
+    keywords: ["bone pain thighs","bilateral thigh bone pain","bulging eyes","exophthalmos","diabetes insipidus","urinating constantly","calcification around kidneys","perirenal fat stranding","thickened aorta coating","hairy kidney","retroperitoneal fibrosis","histiocytosis","BRAF mutation","xanthelasma bone pain"],
+    description: "An extremely rare non-Langerhans histiocytosis causing bone pain, orbital involvement, diabetes insipidus, and characteristic calcification around the kidneys and aorta.",
+    action: "red",
+    actionText: "See a specialist in rare histiocytic disorders immediately. BRAF V600E testing is essential — vemurafenib targets this mutation effectively.",
+    tags: ["ultra-rare","histiocytosis","multi-organ","requires specialist"]
+  },
+  {
+    name: "Capgras Syndrome",
+    emoji: "🧩",
+    keywords: ["believes person replaced by impostor","convinced wife replaced","convinced husband replaced","person replaced by identical stranger","impostor delusion","familiar person replaced","real person somewhere else","misidentification delusion","after stroke delusion","Capgras"],
+    description: "A rare delusional disorder where a person believes that someone close to them has been replaced by an identical impostor. Often occurs after stroke, dementia, or brain injury.",
+    action: "yellow",
+    actionText: "See a neurologist and psychiatrist. Brain imaging is needed to identify underlying cause (stroke, dementia, lesion). Antipsychotics and treating the underlying cause can help.",
+    tags: ["rare","psychiatric","neurological","requires specialist"]
+  },
+  {
+    name: "Calciphylaxis",
+    emoji: "🚨",
+    keywords: ["painful dark patches skin","black patches skin","skin turning black","open wounds skin","dialysis patient skin wounds","skin necrosis","extremely painful skin lesions","wounds worse than they look","painful thigh patches","dialysis skin pain","calcium deposits skin","livedo reticularis painful"],
+    description: "A life-threatening condition where calcium deposits form in small blood vessels under the skin, causing extremely painful wounds that progress to necrosis. Almost exclusively in dialysis patients.",
+    action: "red",
+    actionText: "Go to emergency immediately. Calciphylaxis has very high mortality. Urgent wound care, sodium thiosulfate, and dialysis optimisation are needed.",
+    tags: ["rare","dialysis","life-threatening","emergency"]
+  },
+  {
+    name: "Naegleria fowleri Infection",
+    emoji: "🏊",
+    keywords: ["swimming in lake then severe headache","worst headache of life after swimming","freshwater swimming headache","high fever after lake swimming","stiff neck after swimming","vomiting severe headache fever","confusion after lake","drowsy after lake swimming","neck stiffness fever swimming","brain eating amoeba","rapid deterioration after swimming"],
+    description: "A fatal infection caused by a freshwater amoeba that enters through the nose while swimming. Causes rapid, catastrophic brain destruction — nearly always fatal.",
+    action: "red",
+    actionText: "Call 911 immediately — this is one of the most rapidly fatal infections known. Even hours matter. ICU and experimental treatment (miltefosine) must be initiated immediately.",
+    tags: ["ultra-rare","infectious","fatal","emergency"]
+  },
+  // ── RARE PSYCHIATRIC / NEUROLOGICAL ──
+  {
+    name: "Cotard Delusion",
+    emoji: "🧩",
+    keywords: ["believe I am dead","feel dead","I am dead","organs rotted","organs have rotted","organs decaying","don't feel alive","feel like a corpse","feel nothing inside","no point eating","stopped eating feel dead","walking dead","not alive","body is rotting","feel like I don't exist","nihilistic delusion","denying existence"],
+    description: "A rare psychiatric condition where a person holds a fixed belief that they are dead, do not exist, or that their organs have rotted away. It is a symptom of a serious underlying condition such as severe depression, psychosis, or neurological illness.",
+    action: "red",
+    actionText: "⚠️ This requires urgent psychiatric evaluation. Cotard delusion is a medical emergency — please go to emergency, contact a doctor, or call a crisis line. In Canada call 988.",
+    tags: ["rare","psychiatric","neurological","emergency"]
+  },
+  {
+    name: "Anti-NMDA Receptor Encephalitis",
+    emoji: "🧠",
+    keywords: ["personality change sudden","psychosis","hallucinations","seizures","uncontrolled movements","memory loss","confusion","agitation","catatonia","young woman","fever then psychiatric symptoms","flu like then psychiatric"],
+    description: "A serious autoimmune encephalitis where antibodies attack NMDA receptors in the brain. Often misdiagnosed as psychiatric illness initially. Most common in young women.",
+    action: "red",
+    actionText: "Go to emergency immediately. Requires urgent brain MRI, lumbar puncture, and antibody testing. Early immunotherapy is critical for recovery.",
+    tags: ["rare","autoimmune","neurological","emergency"]
+  },
+  {
+    name: "Kleine-Levin Syndrome",
+    emoji: "😴",
+    keywords: ["episodes of excessive sleep","sleeping for days","hypersomnia episodes","sleeping weeks","eating excessively during episode","confusion during episode","episode then normal","recurring sleep episodes","episodic sleepiness adolescent"],
+    description: "A rare neurological disorder causing recurring episodes of excessive sleep (up to 20 hours/day), cognitive changes, and sometimes compulsive eating. Between episodes the person is completely normal.",
+    action: "yellow",
+    actionText: "See a neurologist. Episodes can last days to weeks. There is no proven cure but lithium may reduce episode frequency.",
+    tags: ["rare","neurological","episodic","adolescents"]
+  },
+  // ── GYNAECOLOGICAL ──
+  {
+    name: "Endometriosis",
+    emoji: "🩸",
+    keywords: ["painful periods","severe period pain","pelvic pain","pain during sex","painful bowel movements","bloating","infertility","heavy periods","fatigue","pain radiating to legs","cyclical symptoms"],
+    description: "Tissue similar to the uterine lining grows outside the uterus, causing significant pain especially during periods and potentially affecting fertility.",
+    action: "yellow",
+    actionText: "See a gynaecologist. Diagnosis often requires laparoscopy. Hormonal therapy, surgery, and pain management are the main approaches.",
+    tags: ["gynaecological","chronic","affects fertility","underdiagnosed"]
+  },
+  {
+    name: "PCOS (Polycystic Ovary Syndrome)",
+    emoji: "🩺",
+    keywords: ["irregular periods","infrequent periods","excess hair growth","hirsutism","acne","weight gain","difficulty losing weight","thinning hair","hair loss scalp","fertility problems","pelvic pain","darkening skin neck","insulin resistance"],
+    description: "A hormonal disorder causing irregular periods, excess androgens, and often polycystic ovaries. Very common and linked to metabolic health.",
+    action: "yellow",
+    actionText: "See a gynaecologist or endocrinologist. Lifestyle changes are key; metformin, hormonal contraceptives, and other medications help.",
+    tags: ["gynaecological","hormonal","common","manageable"]
+  }
+];
+
+// ─── MATCHING ENGINE ─────────────────────────────────────────────
+
+// Generic single words that appear in almost every condition
+const GENERIC_WORDS = new Set([
+  'tired','fatigue','fatigued','weak','weakness','pain','ache','aching',
+  'fever','nausea','sick','unwell','feeling','feel','bad','worse',
+  'headache','dizziness','dizzy','loss','appetite','weight','swelling'
+]);
+
+function tokenise(text) {
+  return text.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2);
+}
+
+function scoreCondition(condition, userTokens, userText) {
+  let score = 0;
+  let matchedKeywords = [];
+  let specificMatches = 0;
+
+  condition.keywords.forEach(keyword => {
+    const kLower = keyword.toLowerCase();
+    const isGeneric = kLower.split(/\s+/).every(w => GENERIC_WORDS.has(w));
+
+    if (userText.toLowerCase().includes(kLower)) {
+      const points = isGeneric ? 1 : 3;
+      score += points;
+      matchedKeywords.push(keyword);
+      if (!isGeneric) specificMatches++;
+    } else {
+      const kTokens = tokenise(keyword);
+      const overlap = kTokens.filter(k => userTokens.some(u => u.includes(k) || k.includes(u)));
+      if (overlap.length > 0) {
+        const hasSpecificToken = overlap.some(t => !GENERIC_WORDS.has(t));
+        const points = hasSpecificToken ? overlap.length : 0.5;
+        score += points;
+        if (!matchedKeywords.includes(keyword)) matchedKeywords.push(keyword);
+        if (hasSpecificToken) specificMatches++;
+      }
+    }
+  });
+
+  // Require at least 2 specific keyword matches to show a result
+  if (specificMatches < 2) score = 0;
+
+  // If the entire user input is only generic words, kill all scores
+  const inputTokens = userTokens;
+  const allInputGeneric = inputTokens.every(t => GENERIC_WORDS.has(t));
+  if (allInputGeneric) score = 0;
+
+  const maxScore = condition.keywords.length * 3;
+  const confidence = Math.min(Math.round((score / maxScore) * 100), 97);
+
+  return { score, confidence, matchedKeywords: [...new Set(matchedKeywords)], specificMatches };
+}
+
+// ─── UI FUNCTIONS ─────────────────────────────────────────────────
+function fillExample(text) {
+  document.getElementById('symptomInput').value = text;
+  document.getElementById('symptomInput').focus();
+}
+
+function analyse() {
+  const input = document.getElementById('symptomInput').value.trim();
+  if (!input || input.length < 5) {
+    document.getElementById('symptomInput').style.borderColor = 'var(--red)';
+    setTimeout(() => document.getElementById('symptomInput').style.borderColor = '', 1000);
+    return;
+  }
+
+  // Show loading
+  const btn = document.getElementById('analyseBtn');
+  const spinner = document.getElementById('spinner');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  btnText.textContent = 'Analysing...';
+
+  setTimeout(() => {
+    const userTokens = tokenise(input);
+
+    // If every word in the input is a generic symptom word, ask for more detail
+    const allGeneric = userTokens.length > 0 && userTokens.every(t => GENERIC_WORDS.has(t));
+    if (allGeneric) {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+      btnText.textContent = '🔍 Analyse Symptoms';
+      document.getElementById('resultsHeader').textContent = 'Too vague to analyse';
+      document.getElementById('resultsSub').textContent = '';
+      document.getElementById('resultsList').innerHTML = `
+        <div class="no-match">
+          <div class="emoji">🤔</div>
+          <p><strong>"${input}"</strong> is too general to narrow down — almost every illness causes this.</p>
+          <p style="margin-top:10px">Try adding more detail: <em>where</em> does it hurt, <em>when</em> did it start, <em>what else</em> are you experiencing?</p>
+          <p style="margin-top:10px;font-size:12px;color:var(--text3)">Example: "tired, sore throat, swollen glands" gives much better results than just "tired"</p>
+        </div>`;
+      document.getElementById('results').classList.add('visible');
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    const scored = CONDITIONS.map(c => ({
+      ...c,
+      ...scoreCondition(c, userTokens, input)
+    })).filter(c => c.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4);
+
+    renderResults(scored, input);
+
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    btnText.textContent = '🔍 Analyse Symptoms';
+  }, 700);
+}
+
+function getConfidenceClass(pct) {
+  if (pct >= 60) return 'high';
+  if (pct >= 35) return 'med';
+  return 'low';
+}
+
+function renderResults(results, input) {
+  const container = document.getElementById('resultsList');
+  const header = document.getElementById('resultsHeader');
+  const sub = document.getElementById('resultsSub');
+  const resultsEl = document.getElementById('results');
+
+  if (results.length === 0) {
+    header.textContent = 'No clear matches found';
+    sub.textContent = '';
+    container.innerHTML = `
+      <div class="no-match">
+        <div class="emoji">🤔</div>
+        <p>We couldn't match your symptoms to any condition in our database. Try describing your symptoms differently, or see a doctor directly.</p>
+      </div>`;
+    resultsEl.classList.add('visible');
+    resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+
+  header.textContent = `${results.length} possible condition${results.length > 1 ? 's' : ''} found`;
+  sub.textContent = `Based on your symptoms · Sorted by match strength · Always confirm with a real doctor`;
+
+  // Save to history and update last results
+  lastResults = results;
+  lastInput = input;
+  saveToHistory(input, results);
+  document.getElementById('reportBtn').style.display = 'flex';
+
+  container.innerHTML = results.map((r, i) => {
+    const confClass = getConfidenceClass(r.confidence);
+    const allTags = [...r.tags];
+    const contagion = getContagion(r.name);
+
+    return `
+      <div class="result-card ${i === 0 ? 'top' : ''}">
+        <div class="result-top-row">
+          <div>
+            <div class="result-name">${r.emoji} ${r.name}</div>
+          </div>
+        </div>
+        <div class="confidence-bar-wrap">
+          <div class="confidence-label">
+            <span>Symptom match</span>
+            <span class="confidence-pct">${r.confidence}%</span>
+          </div>
+          <div class="confidence-bar">
+            <div class="confidence-fill ${confClass}" style="width:0%" data-width="${r.confidence}%"></div>
+          </div>
+        </div>
+        <p class="result-desc">${r.description}</p>
+        <div class="result-tags">
+          ${allTags.map(t => `<span class="tag">${t}</span>`).join('')}
+          ${r.matchedKeywords.slice(0, 4).map(k => `<span class="tag matched">✓ ${k}</span>`).join('')}
+        </div>
+        <div class="action-box ${r.action}">
+          <span>${r.action === 'green' ? '✅' : r.action === 'yellow' ? '⚠️' : '🚨'}</span>
+          <span>${r.actionText}</span>
+        </div>
+        <div class="contagion-box ${contagion.level}">
+          <span>${contagion.icon}</span>
+          <div>
+            <strong>${contagion.label}</strong><br>
+            <span style="font-size:11px">${contagion.isolation}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  resultsEl.classList.add('visible');
+  resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Animate bars
+  setTimeout(() => {
+    document.querySelectorAll('.confidence-fill').forEach(el => {
+      el.style.width = el.dataset.width;
+    });
+  }, 100);
+}
+
+function reset() {
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('symptomInput').value = '';
+  document.getElementById('resultsList').innerHTML = '';
+  document.getElementById('reportBtn').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Enter key support
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) analyse();
+});
+
+// ─── CONTAGION DATABASE ────────────────────────────────────────────
+const CONTAGION = {
+  'Common Cold':                { level:'high',   icon:'🔴', label:'Highly contagious', isolation:'Stay home for at least 3–5 days. Avoid close contact, cover coughs and sneezes.' },
+  'Influenza (Flu)':            { level:'high',   icon:'🔴', label:'Highly contagious', isolation:'Isolate for 5–7 days from symptom onset. Contagious 1 day before symptoms appear.' },
+  'COVID-19':                   { level:'high',   icon:'🔴', label:'Highly contagious', isolation:'Isolate immediately. Test with RAT. Follow local health guidelines for isolation period.' },
+  'Chickenpox':                 { level:'high',   icon:'🔴', label:'Extremely contagious', isolation:'Stay home until all blisters have crusted over — usually 5–7 days.' },
+  'Measles':                    { level:'high',   icon:'🔴', label:'Extremely contagious', isolation:'Isolate for 4 days after rash appears. Report to public health authorities.' },
+  'Strep Throat':               { level:'medium', icon:'🟡', label:'Moderately contagious', isolation:'Stay home until 24 hours after starting antibiotics and fever is gone.' },
+  'Mono (Mononucleosis)':       { level:'medium', icon:'🟡', label:'Moderately contagious', isolation:'Avoid kissing and sharing drinks. No school/work while fever is present.' },
+  'Gastroenteritis (Stomach Flu)': { level:'high', icon:'🔴', label:'Highly contagious', isolation:'Stay home until 48 hours after symptoms stop. Wash hands frequently.' },
+  'Pink Eye (Conjunctivitis)':  { level:'medium', icon:'🟡', label:'Moderately contagious', isolation:'Avoid touching eyes. Stay home from school until discharge stops.' },
+  'Tonsillitis':                { level:'medium', icon:'🟡', label:'Moderately contagious', isolation:'Stay home while symptomatic, especially if bacterial.' },
+  'Lyme Disease':               { level:'none',   icon:'⚪', label:'Not contagious person-to-person', isolation:'No isolation needed — spread only by tick bites.' },
+  'Dengue Fever':               { level:'none',   icon:'⚪', label:'Not directly contagious', isolation:'Not spread person-to-person. Prevent mosquito bites to stop transmission.' },
+  'Allergic Reaction / Hay Fever': { level:'none', icon:'⚪', label:'Not contagious', isolation:'No isolation needed.' },
+  'Asthma / Breathing Difficulty': { level:'none', icon:'⚪', label:'Not contagious', isolation:'No isolation needed.' },
+  'Migraine':                   { level:'none',   icon:'⚪', label:'Not contagious', isolation:'No isolation needed.' },
+  'GERD (Acid Reflux)':         { level:'none',   icon:'⚪', label:'Not contagious', isolation:'No isolation needed.' },
+};
+
+function getContagion(name) {
+  return CONTAGION[name] || { level:'low', icon:'🟢', label:'Low or no risk of transmission', isolation:'Generally no isolation required. Monitor symptoms.' };
+}
+
+// ─── HISTORY ──────────────────────────────────────────────────────
+let symptomHistory = JSON.parse(localStorage.getItem('symptomHistory') || '[]');
+
+function saveToHistory(input, results) {
+  const entry = {
+    id: Date.now(),
+    date: new Date().toLocaleString(),
+    symptoms: input.substring(0, 80),
+    age: document.getElementById('ageGroup').value,
+    duration: document.getElementById('duration').value,
+    topResult: results.length > 0 ? results[0].name : 'No match',
+    topEmoji: results.length > 0 ? results[0].emoji : '❓',
+    confidence: results.length > 0 ? results[0].confidence : 0,
+    allResults: results.map(r => ({ name: r.name, emoji: r.emoji, confidence: r.confidence, action: r.action }))
+  };
+  symptomHistory.unshift(entry);
+  symptomHistory = symptomHistory.slice(0, 20); // keep last 20
+  localStorage.setItem('symptomHistory', JSON.stringify(symptomHistory));
+  renderHistory();
+}
+
+function deleteHistoryEntry(id) {
+  symptomHistory = symptomHistory.filter(e => e.id !== id);
+  localStorage.setItem('symptomHistory', JSON.stringify(symptomHistory));
+  renderHistory();
+}
+
+function clearHistory() {
+  if (!confirm('Clear all symptom history?')) return;
+  symptomHistory = [];
+  localStorage.removeItem('symptomHistory');
+  renderHistory();
+}
+
+function reloadEntry(entry) {
+  document.getElementById('symptomInput').value = entry.symptoms;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  if (!symptomHistory.length) {
+    el.innerHTML = '<div class="history-empty">No symptom checks yet. Your history will appear here after your first analysis.</div>';
+    return;
+  }
+  el.innerHTML = symptomHistory.map(e => `
+    <div class="history-entry" onclick="reloadEntry(${JSON.stringify(e).replace(/"/g,'&quot;')})">
+      <div style="flex:1">
+        <div class="history-date">📅 ${e.date} · ${e.age} · ${e.duration}</div>
+        <div class="history-symptoms">${e.symptoms}</div>
+        <div class="history-result">${e.topEmoji} ${e.topResult} ${e.confidence > 0 ? '('+e.confidence+'% match)' : ''}</div>
+      </div>
+      <button class="history-del" onclick="event.stopPropagation();deleteHistoryEntry(${e.id})" title="Delete">✕</button>
+    </div>
+  `).join('') + `<button class="clear-history-btn" onclick="clearHistory()">🗑️ Clear all history</button>`;
+}
+
+// ─── DOCTOR REPORT ─────────────────────────────────────────────────
+let lastResults = [];
+let lastInput = '';
+
+function generateReport() {
+  if (!lastResults.length) return;
+  const date = new Date().toLocaleString();
+  const age = document.getElementById('ageGroup').value;
+  const duration = document.getElementById('duration').value;
+
+  const conditionsHTML = lastResults.map((r, i) => {
+    const c = getContagion(r.name);
+    return `
+      <div style="border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px">${i+1}. ${r.emoji} ${r.name} — ${r.confidence}% match</div>
+        <div style="font-size:13px;color:#555;margin-bottom:8px">${r.description}</div>
+        <div style="font-size:12px;background:${r.action==='red'?'#fde8e8':r.action==='yellow'?'#fdf3dd':'#dff0e8'};padding:8px 10px;border-radius:6px;margin-bottom:6px">
+          ⚕️ ${r.actionText}
+        </div>
+        <div style="font-size:12px;color:#666">Contagion: ${c.icon} ${c.label}</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('printReport').innerHTML = `
+    <div style="font-family:sans-serif;max-width:700px;margin:0 auto;padding:32px">
+      <div style="border-bottom:3px solid #c8622a;padding-bottom:16px;margin-bottom:20px">
+        <div style="font-size:24px;font-weight:800;color:#c8622a">🩺 SymptomSense — Doctor Report</div>
+        <div style="font-size:12px;color:#888;margin-top:4px">Generated: ${date} · For educational purposes only — not a diagnosis</div>
+      </div>
+
+      <div style="background:#f9f6f1;border-radius:8px;padding:14px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">PATIENT INFORMATION</div>
+        <div style="font-size:13px;color:#555">Age Group: <strong>${age}</strong></div>
+        <div style="font-size:13px;color:#555">Duration: <strong>${duration}</strong></div>
+      </div>
+
+      <div style="background:#f9f6f1;border-radius:8px;padding:14px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">REPORTED SYMPTOMS</div>
+        <div style="font-size:14px;color:#333;font-style:italic">"${lastInput}"</div>
+      </div>
+
+      <div style="font-size:15px;font-weight:700;margin-bottom:12px">POSSIBLE CONDITIONS (by match strength)</div>
+      ${conditionsHTML}
+
+      <div style="background:#fde8e8;border-radius:8px;padding:14px;margin-top:20px;font-size:12px;color:#7a1a1a">
+        ⚠️ <strong>Disclaimer:</strong> This report is generated by an automated symptom-matching tool and is for informational purposes only.
+        It is NOT a medical diagnosis. Please consult a qualified healthcare professional for proper evaluation and treatment.
+      </div>
+    </div>`;
+
+  document.getElementById('printReport').style.display = 'block';
+  window.print();
+  document.getElementById('printReport').style.display = 'none';
+}
+
+// Render history on load
+renderHistory();
+
+// ─── BODY MAP ───────────────────────────────────────────────────────
+const ZONE_SYMPTOMS = {
+  head: {
+    title: '🧠 Head & Face',
+    symptoms: ['headache','migraine','dizziness','confusion','blurred vision','loss of vision','eye pain','red eyes','ear pain','earache','hearing loss','runny nose','blocked nose','sneezing','sore throat','swollen glands','jaw pain','facial pain','facial weakness','scalp tenderness']
+  },
+  neck: {
+    title: '🫁 Neck & Throat',
+    symptoms: ['stiff neck','neck pain','sore throat','difficulty swallowing','swollen lymph nodes','hoarse voice','lump in neck','thyroid swelling','neck stiffness']
+  },
+  chest: {
+    title: '❤️ Chest',
+    symptoms: ['chest pain','chest tightness','shortness of breath','cough','wheezing','palpitations','racing heart','irregular heartbeat','chest pressure','difficulty breathing','coughing blood']
+  },
+  abdomen: {
+    title: '🫃 Abdomen',
+    symptoms: ['stomach pain','nausea','vomiting','diarrhoea','constipation','bloating','gas','heartburn','acid reflux','loss of appetite','blood in stool','abdominal cramps','abdominal discomfort']
+  },
+  arms: {
+    title: '💪 Arms & Hands',
+    symptoms: ['arm pain','arm weakness','tingling hands','numbness hands','joint pain','swollen joints','burning pain hands','easy bruising','wrist pain','elbow pain','muscle weakness']
+  },
+  legs: {
+    title: '🦵 Legs & Feet',
+    symptoms: ['leg pain','knee pain','hip pain','swollen ankles','swollen legs','burning feet','tingling feet','numbness feet','difficulty walking','joint pain legs','leg weakness','foot pain','calf pain']
+  }
+};
+
+let selectedBodySymptoms = new Set();
+let currentZone = null;
+
+function toggleBodyMap() {
+  const content = document.getElementById('bodymapContent');
+  const toggle  = document.getElementById('bodymapToggle');
+  const icon    = document.getElementById('bodymapIcon');
+  content.classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+function selectZone(zone) {
+  currentZone = zone;
+  const data = ZONE_SYMPTOMS[zone];
+
+  // Update SVG highlights
+  document.querySelectorAll('.body-zone').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll(`[data-zone="${zone}"]`).forEach(el => el.classList.add('selected'));
+
+  document.getElementById('zoneTitle').textContent = data.title;
+  document.getElementById('zoneSymptoms').innerHTML = data.symptoms.map(s => `
+    <span class="zone-chip ${selectedBodySymptoms.has(s)?'added':''}" onclick="toggleBodySymptom('${s}')">${s}</span>
+  `).join('');
+}
+
+function toggleBodySymptom(symptom) {
+  if (selectedBodySymptoms.has(symptom)) {
+    selectedBodySymptoms.delete(symptom);
+  } else {
+    selectedBodySymptoms.add(symptom);
+  }
+  // Refresh zone chips
+  if (currentZone) selectZone(currentZone);
+  renderSelectedChips();
+}
+
+function renderSelectedChips() {
+  const el = document.getElementById('selectedChips');
+  if (!selectedBodySymptoms.size) {
+    el.innerHTML = '<span style="font-size:11px;color:var(--text3)">No symptoms selected yet</span>';
+    return;
+  }
+  el.innerHTML = [...selectedBodySymptoms].map(s => `
+    <span class="selected-chip">${s}<button onclick="toggleBodySymptom('${s}')">✕</button></span>
+  `).join('');
+}
+
+function applyBodySymptoms() {
+  if (!selectedBodySymptoms.size) return;
+  const existing = document.getElementById('symptomInput').value.trim();
+  const newSymptoms = [...selectedBodySymptoms].join(', ');
+  document.getElementById('symptomInput').value = existing
+    ? existing + ', ' + newSymptoms
+    : newSymptoms;
+  // Close body map
+  document.getElementById('bodymapContent').classList.remove('open');
+  document.getElementById('bodymapToggle').classList.remove('open');
+  // Scroll to input
+  document.getElementById('symptomInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('symptomInput').focus();
+}
+
+// ─── MEDICATION CHECKER ────────────────────────────────────────────
+const MEDICATIONS = {
+  // Pain / Anti-inflammatory
+  ibuprofen:    { name:'Ibuprofen', class:'NSAID (Anti-inflammatory)', treats:'Pain, fever, inflammation, headaches, menstrual cramps, arthritis', sideEffects:'Stomach upset, heartburn, nausea, dizziness, fluid retention', warnings:'Take with food. Avoid if you have kidney disease or stomach ulcers. Do not combine with other NSAIDs.', otc:true },
+  paracetamol:  { name:'Paracetamol (Acetaminophen)', class:'Analgesic / Antipyretic', treats:'Mild to moderate pain, fever, headaches', sideEffects:'Rarely causes side effects at recommended doses. High doses can damage the liver.', warnings:'Do not exceed 4g per day. Dangerous in overdose — keep away from children. Avoid alcohol.', otc:true },
+  acetaminophen:{ name:'Acetaminophen (Paracetamol)', class:'Analgesic / Antipyretic', treats:'Mild to moderate pain, fever, headaches', sideEffects:'Rarely causes side effects at normal doses. Liver damage in overdose.', warnings:'Do not exceed 4g per day. Avoid alcohol while taking this medication.', otc:true },
+  aspirin:      { name:'Aspirin', class:'NSAID / Blood thinner', treats:'Pain, fever, inflammation; low-dose for blood clot prevention', sideEffects:'Stomach irritation, bleeding risk, tinnitus at high doses', warnings:'Not for children under 16. Take with food. Stop 7 days before surgery.', otc:true },
+  naproxen:     { name:'Naproxen', class:'NSAID (Anti-inflammatory)', treats:'Pain, inflammation, arthritis, menstrual cramps', sideEffects:'Stomach upset, heartburn, dizziness, fluid retention', warnings:'Take with food. Avoid with kidney disease or stomach ulcers.', otc:true },
+
+  // Antibiotics
+  amoxicillin:  { name:'Amoxicillin', class:'Antibiotic (Penicillin)', treats:'Bacterial infections: strep throat, ear infections, pneumonia, UTIs', sideEffects:'Diarrhoea, nausea, rash, allergic reactions', warnings:'Complete the full course. Tell your doctor if penicillin-allergic. May reduce contraceptive pill effectiveness.', otc:false },
+  penicillin:   { name:'Penicillin', class:'Antibiotic', treats:'Bacterial infections: strep throat, dental infections, skin infections', sideEffects:'Allergic reactions, diarrhoea, nausea', warnings:'Serious allergic reactions possible. Complete full course.', otc:false },
+  azithromycin: { name:'Azithromycin', class:'Antibiotic (Macrolide)', treats:'Respiratory infections, strep throat, skin infections, chlamydia', sideEffects:'Stomach upset, diarrhoea, nausea, heart rhythm changes', warnings:'Rare serious heart side effects. Complete full course.', otc:false },
+  metronidazole:{ name:'Metronidazole', class:'Antibiotic / Antiprotozoal', treats:'Bacterial and parasitic infections, dental infections, BV', sideEffects:'Nausea, metallic taste, dizziness', warnings:'Do NOT drink alcohol — causes severe reaction. Avoid in first trimester.', otc:false },
+  doxycycline:  { name:'Doxycycline', class:'Antibiotic (Tetracycline)', treats:'Acne, Lyme disease, malaria prevention, chest/sinus infections', sideEffects:'Sun sensitivity, nausea, oesophageal irritation', warnings:'Take with a full glass of water and stay upright for 30 mins. Avoid sun exposure.', otc:false },
+  ciprofloxacin:{ name:'Ciprofloxacin', class:'Antibiotic (Fluoroquinolone)', treats:'UTIs, respiratory infections, travellers diarrhoea, skin infections', sideEffects:'Nausea, diarrhoea, tendon damage risk, sun sensitivity', warnings:'Risk of tendon rupture — stop if tendon pain. Avoid dairy when taking.', otc:false },
+
+  // Allergy / Respiratory
+  cetirizine:   { name:'Cetirizine', class:'Antihistamine', treats:'Hay fever, allergic rhinitis, hives, itching', sideEffects:'Drowsiness (mild), dry mouth, headache', warnings:'May cause mild drowsiness. Avoid alcohol.', otc:true },
+  loratadine:   { name:'Loratadine', class:'Antihistamine (non-drowsy)', treats:'Hay fever, allergies, hives, skin itching', sideEffects:'Headache, dry mouth, rarely drowsiness', warnings:'Generally non-drowsy. Safe for most adults and children over 2.', otc:true },
+  diphenhydramine:{ name:'Diphenhydramine', class:'Antihistamine (first-gen)', treats:'Allergies, hay fever, sleep aid, motion sickness', sideEffects:'Significant drowsiness, dry mouth, blurred vision, urinary retention', warnings:'Very sedating — do not drive. Not suitable for elderly or those with prostate issues.', otc:true },
+  salbutamol:   { name:'Salbutamol (Albuterol)', class:'Bronchodilator (inhaler)', treats:'Asthma, COPD, exercise-induced bronchospasm', sideEffects:'Tremor, rapid heartbeat, headache, palpitations', warnings:'Rescue inhaler — for acute symptoms only. See doctor if using more than 3x/week.', otc:false },
+
+  // Stomach / GI
+  omeprazole:   { name:'Omeprazole', class:'Proton Pump Inhibitor (PPI)', treats:'Acid reflux, GERD, stomach ulcers, heartburn', sideEffects:'Headache, diarrhoea, nausea, low magnesium with long-term use', warnings:'Not for long-term use without doctor supervision. Can reduce B12 and magnesium absorption.', otc:true },
+  loperamide:   { name:'Loperamide', class:'Anti-diarrhoeal', treats:'Acute and chronic diarrhoea', sideEffects:'Constipation, stomach pain, nausea', warnings:'Do not use if blood in stool or high fever. Maximum 2 days without doctor advice.', otc:true },
+  metoclopramide:{ name:'Metoclopramide', class:'Anti-emetic / Prokinetic', treats:'Nausea, vomiting, gastroparesis, migraine-related nausea', sideEffects:'Drowsiness, restlessness, movement disorders with long-term use', warnings:'Short-term use only (max 5 days). Rare serious neurological side effects.', otc:false },
+
+  // Diabetes / Metabolic
+  metformin:    { name:'Metformin', class:'Biguanide (Antidiabetic)', treats:'Type 2 diabetes, sometimes PCOS', sideEffects:'Nausea, diarrhoea, stomach upset (usually improves), vitamin B12 deficiency', warnings:'Take with food. Stop before contrast scans. Check kidney function regularly.', otc:false },
+  insulin:      { name:'Insulin', class:'Hormone (Antidiabetic)', treats:'Type 1 and Type 2 diabetes', sideEffects:'Hypoglycemia (low blood sugar), weight gain, injection site reactions', warnings:'Always carry glucose. Never skip meals after injecting. Store in fridge.', otc:false },
+
+  // Heart / Blood pressure
+  atorvastatin: { name:'Atorvastatin', class:'Statin (Cholesterol-lowering)', treats:'High cholesterol, prevention of heart attack and stroke', sideEffects:'Muscle pain, liver enzyme elevation, digestive upset', warnings:'Report unexplained muscle pain immediately. Avoid grapefruit juice.', otc:false },
+  lisinopril:   { name:'Lisinopril', class:'ACE Inhibitor', treats:'High blood pressure, heart failure, diabetic kidney disease', sideEffects:'Dry cough, dizziness, high potassium, rarely angioedema', warnings:'Dangerous in pregnancy. Stop if throat/tongue swelling occurs. Monitor potassium.', otc:false },
+  amlodipine:   { name:'Amlodipine', class:'Calcium Channel Blocker', treats:'High blood pressure, angina', sideEffects:'Ankle swelling, flushing, headache, palpitations', warnings:'Do not stop suddenly. Grapefruit juice may increase drug levels.', otc:false },
+
+  // Mental health
+  sertraline:   { name:'Sertraline', class:'SSRI (Antidepressant)', treats:'Depression, anxiety, PTSD, OCD, panic disorder', sideEffects:'Nausea, insomnia, sexual dysfunction, headache, diarrhoea', warnings:'Takes 2–6 weeks to work. Do not stop suddenly. Increased suicidal thoughts risk in under-25s initially.', otc:false },
+  fluoxetine:   { name:'Fluoxetine (Prozac)', class:'SSRI (Antidepressant)', treats:'Depression, OCD, bulimia, panic disorder', sideEffects:'Nausea, insomnia, anxiety initially, sexual dysfunction', warnings:'Long half-life — stays in system for weeks. Drug interactions with MAOIs dangerous.', otc:false },
+  melatonin:    { name:'Melatonin', class:'Sleep hormone supplement', treats:'Insomnia, jet lag, sleep disorders', sideEffects:'Drowsiness, headache, dizziness, nausea', warnings:'Short-term use. Take 30–60 mins before bed. Avoid driving after taking.', otc:true },
+
+  // Thyroid
+  levothyroxine:{ name:'Levothyroxine', class:'Thyroid Hormone Replacement', treats:'Hypothyroidism (underactive thyroid)', sideEffects:'Palpitations, sweating, weight loss if overdosed', warnings:'Take on empty stomach, 30 mins before food. Many drug interactions. Regular TSH monitoring needed.', otc:false },
+};
+
+function checkMed() {
+  const input = document.getElementById('medsInput').value.trim().toLowerCase().replace(/[^a-z]/g,'');
+  const result = document.getElementById('medsResult');
+
+  if (!input) return;
+
+  const med = MEDICATIONS[input];
+
+  if (!med) {
+    result.innerHTML = `
+      <div style="text-align:center;padding:16px;color:var(--text3)">
+        <div style="font-size:24px;margin-bottom:8px">🔍</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)">Not in database</div>
+        <div style="font-size:12px;margin-top:6px">Try the generic name (e.g. "ibuprofen" not "Advil").<br>We have 30+ common medications.</div>
+      </div>`;
+    result.classList.add('visible');
+    return;
+  }
+
+  result.innerHTML = `
+    <div class="meds-name">${med.name}</div>
+    <div class="meds-class">${med.class} · ${med.otc ? '🟢 Available over the counter' : '🔴 Prescription only'}</div>
+    <div class="meds-grid">
+      <div class="meds-box">
+        <div class="meds-box-label">Treats</div>
+        <div class="meds-box-content">${med.treats}</div>
+      </div>
+      <div class="meds-box">
+        <div class="meds-box-label">Side Effects</div>
+        <div class="meds-box-content">${med.sideEffects}</div>
+      </div>
+    </div>
+    <div class="meds-warning">⚠️ <strong>Warnings:</strong> ${med.warnings}</div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text3)">Always follow your doctor or pharmacist's instructions. This information is for general education only.</div>`;
+  result.classList.add('visible');
+}
+
+document.getElementById('medsInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkMed();
+});
+</script>
+</body>
+</html>
